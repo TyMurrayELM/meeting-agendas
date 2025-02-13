@@ -8,19 +8,39 @@ const ProtectedRoute = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const checkAuthorization = async (session) => {
+      if (session?.user?.email) {
+        const { data: allowedUser, error } = await supabase
+          .from('allowed_users')
+          .select('*')
+          .eq('email', session.user.email)
+          .single();
+  
+        if (!allowedUser || error) {
+          await supabase.auth.signOut();
+          setUser(null);
+          alert('Access denied. You are not authorized to access this application.');
+          return;
+        }
+        setUser(session.user);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    };
+  
     // Check current auth status
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
+      checkAuthorization(session);
+    });
+  
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      checkAuthorization(session);
+    });
+  
+    return () => subscription.unsubscribe();
+  }, []);
 
   if (loading) {
     return <div>Loading...</div>
