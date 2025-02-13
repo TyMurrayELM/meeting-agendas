@@ -256,7 +256,7 @@ const meetingData = {
         },
         {
           name: 'Training & Development',
-          target: '-',
+          target: 'Complete required training of the month',
           actual: '',
           status: '',
           actions: ''
