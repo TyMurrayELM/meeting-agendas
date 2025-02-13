@@ -262,8 +262,8 @@ const meetingData = {
           actions: ''
         },
         {
-          name: 'Safety Culture',
-          target: '-',
+          name: 'Employee Engagement',
+          target: 'Recognize and appreciate employee contributions, achievements, milestones, and/or behaviors that support organizational goals and values',
           actual: '',
           status: '',
           actions: ''
