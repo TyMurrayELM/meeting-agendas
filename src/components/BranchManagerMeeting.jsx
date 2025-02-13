@@ -285,7 +285,7 @@ const meetingData = {
 
   const generateBiWeeklyTuesdays = () => {
     const dates = [];
-    let currentDate = new Date(2025, 1, 25); // Feb 25, 2025
+    let currentDate = new Date(2025, 1, 18); // Feb 18, 2025
 
     while (currentDate.getFullYear() === 2025) {
       dates.push(currentDate.toLocaleDateString('en-US', { 
