@@ -14,8 +14,7 @@ import seIcon from '../assets/icons/se.png';
 import nIcon from '../assets/icons/n.png';
 import swIcon from '../assets/icons/sw.png';
 import lvIcon from '../assets/icons/lv.png';
-import * as Select from '@radix-ui/react-select'; // Delete if Issue
-import { ChevronDown } from 'lucide-react';  // Delete if Issue
+
 
 // Add this constant at the top of your component
 const MEETING_TYPE = 'bm-meeting';
@@ -778,38 +777,18 @@ const branches = [
           />
         </td>
         <td className="px-4 py-2 align-top">
-        <Select.Root value={kpi.status} onValueChange={(value) => handleStatusChange(mIndex, kIndex, value)}>
-  <Select.Trigger className="flex items-center justify-between w-full px-3 py-2 border rounded-md bg-white hover:bg-gray-50">
-    <Select.Value placeholder="Select a status...">
-      {kpi.status ? renderStatusOption(kpi.status) : "Select a status..."}
-    </Select.Value>
-    <Select.Icon>
-      <ChevronDown className="h-4 w-4 text-gray-500" />
-    </Select.Icon>
-  </Select.Trigger>
-
-  <Select.Portal>
-    <Select.Content className="bg-white rounded-md shadow-lg border">
-      <Select.Viewport className="p-1">
-        <Select.Option value="on-track" className="flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer">
-          <Check className="text-green-500 mr-2" /> On Track
-        </Select.Option>
-        <Select.Option value="resolving" className="flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer">
-          <Timer className="text-yellow-500 mr-2" /> Resolving
-        </Select.Option>
-        <Select.Option value="in-progress" className="flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer">
-          <Timer className="text-blue-500 mr-2" /> In Progress
-        </Select.Option>
-        <Select.Option value="in-training" className="flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer">
-          <Timer className="text-purple-500 mr-2" /> In Training
-        </Select.Option>
-        <Select.Option value="off-track" className="flex items-center px-3 py-2 hover:bg-gray-100 rounded cursor-pointer">
-          <AlertTriangle className="text-red-500 mr-2" /> Off Track
-        </Select.Option>
-      </Select.Viewport>
-    </Select.Content>
-  </Select.Portal>
-</Select.Root> 
+          <select 
+            value={kpi.status}
+            onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+            className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+          >
+            <option value="">Select a status...</option>
+            <option value="on-track">✅ On Track</option>
+            <option value="resolving">⏳ Resolving</option>
+            <option value="in-progress">🔄 In Progress</option>
+            <option value="in-training">📚 In Training</option>
+            <option value="off-track">⚠️ Off Track</option>
+          </select>
         </td>
         <td className="px-4 py-2">
   <textarea
