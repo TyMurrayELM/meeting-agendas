@@ -42,6 +42,7 @@ const BranchManagerMeeting = () => {
   // Add these new states near your other state declarations
 const [currentBooks, setCurrentBooks] = useState([]);
 const [facilitator, setFacilitator] = useState('');
+const agaveLogo = new URL('../assets/logos/agave.png', import.meta.url).href
 
 // Add these new handlers near your other handlers
 const fetchMeetingMetadata = async (date) => {
@@ -401,6 +402,17 @@ useEffect(() => {
   supabase.auth.getUser().then(({ data: { user } }) => {
     setUser(user);
   });
+
+  // Add automatic logout on page close
+  const handleTabClose = (event) => {
+    supabase.auth.signOut();
+  };
+
+  window.addEventListener('beforeunload', handleTabClose);
+
+  return () => {
+    window.removeEventListener('beforeunload', handleTabClose);
+  };
 }, []);
 
 // Add this new useEffect
@@ -493,10 +505,17 @@ const branches = [
     return (
       <div className="bg-blue-50 min-h-screen w-full">
         <div className="container mx-auto p-4 space-y-4">
-{/* Week Selector */}
+
 {/* Week Selector and User Profile */}
 <div className="flex items-center justify-between mb-6">
-  <h1 className="text-xl font-semibold">Branch Manager Meeting Agenda</h1>
+  <div className="flex items-center gap-3">
+    <img 
+      src={agaveLogo} 
+      alt="Agave Logo" 
+      className="h-8 w-auto"
+    />
+    <h1 className="text-xl font-semibold">Branch Manager Meeting Agenda</h1>
+  </div>
   <div className="flex items-center gap-4">
     <div className="relative min-w-[200px]">
       <select 
@@ -534,19 +553,19 @@ const branches = [
 </div>
 
       <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 gap-1 bg-white p-1">
+      <TabsList className="grid w-full grid-cols-5 gap-1">
           {tabOptions.map(tab => (
             <TabsTrigger 
   key={tab.id} 
   value={tab.id} 
   className={`
-    rounded-md px-4 py-3 text-sm font-medium transition-all
-    data-[state=active]:shadow flex items-center gap-2 justify-center
-    ${tab.id === 'SE' ? 'bg-red-50 hover:bg-red-100 data-[state=active]:bg-red-200' : ''}
-    ${tab.id === 'N' ? 'bg-green-50 hover:bg-green-100 data-[state=active]:bg-green-200' : ''}
-    ${tab.id === 'SW' ? 'bg-blue-50 hover:bg-blue-100 data-[state=active]:bg-blue-200' : ''}
-    ${tab.id === 'LV' ? 'bg-yellow-50 hover:bg-yellow-100 data-[state=active]:bg-yellow-200' : ''}
-    ${tab.id === 'guide' ? 'bg-blue-50 hover:bg-blue-100 data-[state=active]:bg-blue-200' : ''}
+    rounded-xl px-4 py-3 text-sm font-medium transition-all shadow-sm
+    data-[state=active]:shadow-lg flex items-center gap-2 justify-center
+    ${tab.id === 'SE' ? 'bg-red-100 hover:bg-red-300 data-[state=active]:bg-red-300 data-[state=active]:text-white' : ''}
+    ${tab.id === 'N' ? 'bg-green-100 hover:bg-green-300 data-[state=active]:bg-green-300 data-[state=active]:text-white' : ''}
+    ${tab.id === 'SW' ? 'bg-blue-100 hover:bg-blue-300 data-[state=active]:bg-blue-300 data-[state=active]:text-white' : ''}
+    ${tab.id === 'LV' ? 'bg-yellow-100 hover:bg-yellow-300 data-[state=active]:bg-yellow-300 data-[state=active]:text-white' : ''}
+    ${tab.id === 'guide' ? 'bg-blue-100 hover:bg-blue-300 data-[state=active]:bg-blue-300 data-[state=active]:text-white' : ''}
   `}
 >
               {tab.id !== 'guide' && (
@@ -557,10 +576,11 @@ const branches = [
           ))}
         </TabsList>
 
+
 {/* Meeting Guide Tab */}
-<TabsContent value="guide" className="space-y-4">
+<TabsContent value="guide" className="space-y-4 mt-6">
   {/* First Section: Mission & Current Readings */}
-  <div>
+  <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
     <div className="bg-blue-900 p-4">
       <h2 className="text-white text-lg font-semibold">Mission & Current Readings</h2>
     </div>
@@ -596,7 +616,7 @@ const branches = [
   </div>
 
   {/* Second Section: Meeting Agenda & Facilitation */}
-  <div>
+  <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
     <div className="bg-blue-900 p-4">
       <h2 className="text-white text-lg font-semibold">Meeting Agenda & Facilitation</h2>
     </div>
@@ -643,7 +663,7 @@ const branches = [
   </div>
 
   {/* Third Section: Meeting Files */}
-  <div>
+  <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
     <div className="bg-blue-900 p-4">
       <h2 className="text-white text-lg font-semibold">Meeting Files & Transcripts</h2>
     </div>
@@ -707,13 +727,13 @@ const branches = [
 
         {/* Branch Tabs */}
         {branches.map(branch => (
-          <TabsContent key={branch.id} value={branch.id} className="space-y-4">
-            <div>
-              <div className={`${branch.headerColor} p-4`}>
-                <h2 className="text-lg font-semibold">Strategic Objectives & KPIs</h2>
-              </div>
-              <div className="bg-white p-4">
-                <div className="overflow-x-auto">
+          <TabsContent key={branch.id} value={branch.id} className="space-y-4 mt-6">
+<div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
+  <div className="bg-blue-900 p-4">
+    <h2 className="text-lg font-semibold text-white">Strategic Objectives & KPIs</h2>
+  </div>
+  <div className="bg-white p-4">
+    <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                   <thead>
   <tr className="border-b border-gray-200">
