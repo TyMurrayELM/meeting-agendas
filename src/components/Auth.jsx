@@ -5,18 +5,46 @@ const fullLogo = new URL('../assets/logos/full.png', import.meta.url).href
 
 const AuthComponent = () => {
   const handleGoogleSignIn = async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'select_account',
-          hd: 'encorelm.com',
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+            hd: 'encorelm.com',
+          },
+          redirectTo: window.location.origin,
         },
-      },
-    })
-    if (error) console.error('Error signing in:', error.message)
-  }
+      });
+  
+      if (authError) throw authError;
+  
+      // Add event listener for auth state changes
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN') {
+          const userEmail = session?.user?.email;
+          
+          // Check if user's email is in allowed_users table
+          const { data: allowedUser, error: dbError } = await supabase
+            .from('allowed_users')
+            .select('*')
+            .eq('email', userEmail)
+            .single();
+  
+          if (dbError || !allowedUser) {
+            // If not allowed, sign them out
+            await supabase.auth.signOut();
+            alert('Access denied. You are not authorized to access this application.');
+          }
+        }
+      });
+  
+    } catch (error) {
+      console.error('Error during sign in:', error.message);
+      alert('An error occurred during sign in. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-100">
