@@ -555,18 +555,18 @@ const branches = [
       <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab} className="w-full">
       <TabsList className="grid w-full grid-cols-5 gap-1">
           {tabOptions.map(tab => (
-            <TabsTrigger 
-  key={tab.id} 
-  value={tab.id} 
-  className={`
-    rounded-xl px-4 py-3 text-sm font-medium transition-all shadow-sm
-    data-[state=active]:shadow-lg flex items-center gap-2 justify-center
-    ${tab.id === 'SE' ? 'bg-red-100 hover:bg-red-300 data-[state=active]:bg-red-300 data-[state=active]:text-white' : ''}
-    ${tab.id === 'N' ? 'bg-green-100 hover:bg-green-300 data-[state=active]:bg-green-300 data-[state=active]:text-white' : ''}
-    ${tab.id === 'SW' ? 'bg-blue-100 hover:bg-blue-300 data-[state=active]:bg-blue-300 data-[state=active]:text-white' : ''}
-    ${tab.id === 'LV' ? 'bg-yellow-100 hover:bg-yellow-300 data-[state=active]:bg-yellow-300 data-[state=active]:text-white' : ''}
-    ${tab.id === 'guide' ? 'bg-blue-100 hover:bg-blue-300 data-[state=active]:bg-blue-300 data-[state=active]:text-white' : ''}
-  `}
+ <TabsTrigger 
+ key={tab.id} 
+ value={tab.id} 
+ className={`
+   rounded-xl px-4 py-3 text-sm font-medium transition-all shadow-sm bg-white
+   data-[state=active]:shadow-lg flex items-center gap-2 justify-center
+   ${tab.id === 'SE' ? 'bg-red-100 hover:bg-red-300 data-[state=active]:bg-red-300 data-[state=active]:text-white !important' : ''}
+   ${tab.id === 'N' ? 'bg-green-100 hover:bg-green-300 data-[state=active]:bg-green-300 data-[state=active]:text-white !important' : ''}
+   ${tab.id === 'SW' ? 'bg-blue-100 hover:bg-blue-300 data-[state=active]:bg-blue-300 data-[state=active]:text-white !important' : ''}
+   ${tab.id === 'LV' ? 'bg-yellow-100 hover:bg-yellow-300 data-[state=active]:bg-yellow-300 data-[state=active]:text-white !important' : ''}
+   ${tab.id === 'guide' ? 'bg-blue-100 hover:bg-blue-300 data-[state=active]:bg-blue-300 data-[state=active]:text-white !important' : ''}
+ `}
 >
               {tab.id !== 'guide' && (
                 <img src={tab.icon} alt={tab.name} className="w-6 h-6" />
