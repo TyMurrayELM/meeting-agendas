@@ -562,13 +562,13 @@ const branches = [
    rounded-xl px-4 py-3 text-sm font-medium transition-all shadow-sm
    flex items-center gap-2 justify-center
    ${tab.id === 'SE' && 'bg-red-200 hover:bg-red-300'}
-   ${tab.id === 'SE' && '[&[data-state=active]]:bg-red-600 [&[data-state=active]]:text-white'}
+   ${tab.id === 'SE' && '[&[data-state=active]]:bg-red-400 [&[data-state=active]]:text-white'}
    ${tab.id === 'N' && 'bg-green-200 hover:bg-green-300'}
-   ${tab.id === 'N' && '[&[data-state=active]]:bg-green-600 [&[data-state=active]]:text-white'}
+   ${tab.id === 'N' && '[&[data-state=active]]:bg-green-400 [&[data-state=active]]:text-white'}
    ${tab.id === 'SW' && 'bg-blue-200 hover:bg-blue-300'}
-   ${tab.id === 'SW' && '[&[data-state=active]]:bg-blue-600 [&[data-state=active]]:text-white'}
+   ${tab.id === 'SW' && '[&[data-state=active]]:bg-blue-400 [&[data-state=active]]:text-white'}
    ${tab.id === 'LV' && 'bg-yellow-200 hover:bg-yellow-300'}
-   ${tab.id === 'LV' && '[&[data-state=active]]:bg-yellow-600 [&[data-state=active]]:text-white'}
+   ${tab.id === 'LV' && '[&[data-state=active]]:bg-yellow-400 [&[data-state=active]]:text-white'}
    ${tab.id === 'guide' && 'bg-blue-200 hover:bg-blue-300'}
    ${tab.id === 'guide' && '[&[data-state=active]]:bg-blue-600 [&[data-state=active]]:text-white'}
  `}
