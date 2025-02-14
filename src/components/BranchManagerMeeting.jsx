@@ -48,6 +48,7 @@ const agaveLogo = new URL('../assets/logos/agave.png', import.meta.url).href
 // Add these new handlers near your other handlers
 const fetchMeetingMetadata = async (date) => {
   try {
+    console.log('Fetching metadata for date:', date); // Debug log
     const { data, error } = await supabase
       .from('meeting_metadata')
       .select('*')
@@ -55,10 +56,12 @@ const fetchMeetingMetadata = async (date) => {
       .eq('meeting_date', new Date(date).toISOString().split('T')[0])
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows" error
+    if (error && error.code !== 'PGRST116') {
       console.error('Error fetching metadata:', error);
       return;
     }
+
+    console.log('Fetched metadata:', data); // Debug log
 
     if (data) {
       setCurrentBooks(data.current_books || []);
@@ -71,12 +74,18 @@ const fetchMeetingMetadata = async (date) => {
           meeting_type: MEETING_TYPE,
           meeting_date: new Date(date).toISOString().split('T')[0],
           current_books: meetingData.currentBooks,
-          facilitator: ''
+          facilitator: '',
+          updated_at: new Date().toISOString() // Add this line
         })
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error creating initial metadata:', insertError);
+        throw insertError;
+      }
+
+      console.log('Created new metadata:', newData); // Debug log
 
       if (newData) {
         setCurrentBooks(newData.current_books || []);
@@ -96,6 +105,7 @@ const handleFacilitatorChange = async (newValue) => {
         meeting_type: MEETING_TYPE,
         meeting_date: new Date(selectedDate).toISOString().split('T')[0],
         facilitator: newValue,
+        current_books: currentBooks, // Add this line
         updated_at: new Date().toISOString()
       });
 
@@ -130,6 +140,7 @@ const handleBookChange = async (index, newValue) => {
 const handleAddBook = async () => {
   try {
     const newBooks = [...currentBooks, ''];
+    console.log('Adding new book, current books:', currentBooks, 'new books:', newBooks); // Debug log
 
     const { error } = await supabase
       .from('meeting_metadata')
@@ -137,11 +148,13 @@ const handleAddBook = async () => {
         meeting_type: MEETING_TYPE,
         meeting_date: new Date(selectedDate).toISOString().split('T')[0],
         current_books: newBooks,
+        facilitator: facilitator, // Add this line
         updated_at: new Date().toISOString()
       });
 
     if (error) throw error;
     setCurrentBooks(newBooks);
+    console.log('Books updated successfully'); // Debug log
   } catch (err) {
     console.error('Error adding book:', err);
   }
