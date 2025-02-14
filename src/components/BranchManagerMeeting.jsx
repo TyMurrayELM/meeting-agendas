@@ -621,51 +621,41 @@ const handleStatusChange = async (mIndex, kIndex, newValue) => {
 };
 
 // Add this inside your component, near the top with other handler definitions
-const handleActionsChange = async (mIndex, kIndex, newValue) => {
+const debouncedSaveActions = useMemo(
+  () => _.debounce(async (newValue, branchId, date, category, kpiName) => {
+    try {
+      const { error } = await supabase
+        .from('kpi_entries')
+        .update({ 
+          actions: newValue,
+          updated_at: new Date().toISOString()
+        })
+        .eq('meeting_type', MEETING_TYPE)
+        .eq('branch_id', branchId)
+        .eq('meeting_date', date)
+        .eq('category', category)
+        .eq('kpi_name', kpiName);
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error saving action:', err);
+    }
+  }, 1000),
+  []
+);
+
+const handleActionsChange = (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
   const kpi = metric.kpis[kIndex];
   const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
 
-  try {
-    console.log('Saving action for:', {
-      branch: selectedTab,
-      date: formattedDate,
-      category: metric.category,
-      kpi: kpi.name
-    });
+  // Update UI immediately
+  const updatedMetrics = [...metricsData];
+  updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
+  setMetricsData(updatedMetrics);
 
-    const { data, error } = await supabase
-      .from('kpi_entries')
-      .update({ 
-        actions: newValue,
-        updated_at: new Date().toISOString()
-      })
-      .eq('meeting_type', MEETING_TYPE)
-      .eq('branch_id', selectedTab)
-      .eq('meeting_date', formattedDate)
-      .eq('category', metric.category)
-      .eq('kpi_name', kpi.name)
-      .select();  // Add this to get response data
-
-    if (error) {
-      console.error('Supabase update error:', error);
-      throw error;
-    }
-
-    console.log('Update response:', data);
-
-    // Update local state
-    const updatedMetrics = [...metricsData];
-    updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
-    setMetricsData(updatedMetrics);
-  } catch (err) {
-    console.error('Error saving action:', err, {
-      branch: selectedTab,
-      date: formattedDate,
-      category: metric.category,
-      kpi: kpi.name
-    });
-  }
+  // Debounce the save to database
+  debouncedSaveActions(newValue, selectedTab, formattedDate, metric.category, kpi.name);
 };
 
 // Then define branches (this got mixed up in your code)
