@@ -564,7 +564,33 @@ useEffect(() => {
   fetchMeetingMetadata(selectedDate);
 }, [selectedDate]);
 
+const handleStatusChange = async (mIndex, kIndex, newValue) => {
+  const metric = metricsData[mIndex];
+  const kpi = metric.kpis[kIndex];
 
+  try {
+    const { error } = await supabase
+      .from('kpi_entries')
+      .update({ 
+        status: newValue,
+        updated_at: new Date().toISOString()
+      })
+      .eq('meeting_type', MEETING_TYPE)
+      .eq('branch_id', selectedTab)
+      .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+      .eq('category', metric.category)
+      .eq('kpi_name', kpi.name);
+
+    if (error) throw error;
+
+    // Update local state
+    const updatedMetrics = [...metricsData];
+    updatedMetrics[mIndex].kpis[kIndex].status = newValue;
+    setMetricsData(updatedMetrics);
+  } catch (err) {
+    setError(err.message);
+  }
+};
 
 const handleActualChange = async (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
