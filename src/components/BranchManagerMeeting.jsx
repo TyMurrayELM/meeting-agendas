@@ -710,24 +710,32 @@ const branches = [
   <div>
     <h3 className="font-semibold mb-2">Current Book Readings</h3>
     <div className="space-y-2">
-      {currentBooks.map((book, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <span>📚</span>
-          <input
-            type="text"
-            value={book}
-            onChange={(e) => handleBookChange(index, e.target.value)}
-            className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
-            placeholder="Enter book title..."
-          />
-        </div>
-      ))}
+    {currentBooks.map((book, index) => (
+  <div key={index} className="flex items-center gap-2">
+    <span>📚</span>
+    <input
+      type="text"
+      value={book || ''}
+      onChange={(e) => {
+        const newBooks = [...currentBooks];
+        newBooks[index] = e.target.value;
+        setCurrentBooks(newBooks); // Immediately update UI
+        handleBookChange(index, e.target.value);
+      }}
+      className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
+      placeholder="Enter book title..."
+    />
+  </div>
+))}
       <button
-        onClick={handleAddBook}
-        className="mt-2 text-blue-500 hover:text-blue-700"
-      >
-        + Add book
-      </button>
+  onClick={() => {
+    setCurrentBooks(prev => [...prev, '']); // Immediately update UI
+    handleAddBook();
+  }}
+  className="mt-2 text-blue-500 hover:text-blue-700"
+>
+  + Add book
+</button>
     </div>
   </div>
 </div>
@@ -744,12 +752,15 @@ const branches = [
     <div>
   <h3 className="font-semibold mb-2">Facilitator</h3>
   <input
-    type="text"
-    value={facilitator}
-    onChange={(e) => handleFacilitatorChange(e.target.value)}
-    className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
-    placeholder="Enter facilitator name..."
-  />
+  type="text"
+  value={facilitator}
+  onChange={(e) => {
+    setFacilitator(e.target.value); // Immediately update UI
+    handleFacilitatorChange(e.target.value);
+  }}
+  className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
+  placeholder="Enter facilitator name..."
+/>
 </div>
 
       <div>
