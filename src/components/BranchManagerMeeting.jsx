@@ -200,6 +200,7 @@ const meetingData = {
       kpis: [
         {
           name: 'Hot Properties',
+          explanation: 'Identify properties with issues and corrective plans of action',
           target: '-',
           actual: '',
           status: '',
@@ -249,6 +250,7 @@ const meetingData = {
         },
         {
           name: 'Safety Compliance',
+          explanation: '',
           target: '-',
           actual: '',
           status: '',
@@ -269,7 +271,8 @@ const meetingData = {
         },
         {
           name: 'Training & Development',
-          target: 'Complete required training of the month',
+          target: 'Punchlist training. Cut back training with Mark and Scott this Thursday.',
+          explanation: 'Complete required training of the month',
           actual: '',
           status: '',
           actions: ''
@@ -826,7 +829,7 @@ const branches = [
             {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
             {metric.category === 'Client' && "Strategic Objective: Maintain Client Retention"}
             {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
-            {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop our safety culture, Increase employee retention, Upskill employees"}
+            {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
           </div>
         </td>
         <td className="px-4 py-2 align-top">
