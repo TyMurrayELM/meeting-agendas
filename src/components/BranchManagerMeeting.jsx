@@ -200,7 +200,39 @@ const meetingData = {
       kpis: [
         {
           name: 'Hot Properties',
-          explanation: 'Identify properties with issues and corrective plans of action',
+          explanation: 'Identify and address high-risk properties',
+          target: '-',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Ownership Walks',
+          explanation: 'Review upcoming walks and review actions from prior walks',
+          target: '-',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Management Changes',
+          explanation: 'Track and manage property management transitions',
+          target: '-',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Cancellations',
+          explanation: 'Monitor and analyze contract cancellations',
+          target: '-',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'New Jobs',
+          explanation: 'Track new jobs and prepare for start-ups',
           target: '-',
           actual: '',
           status: '',
