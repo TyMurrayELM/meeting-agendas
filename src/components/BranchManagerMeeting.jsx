@@ -435,9 +435,9 @@ const fetchKPIData = async (branchId, date) => {
           category: metric.category,
           kpi_name: kpi.name,
           target: kpi.target,
-          actual: kpi.actual,
-          status: kpi.status,
-          actions: kpi.actions
+          actual: '',
+          status: 'in-progress', // Set default status
+          actions: ''
         }))
       );
 
@@ -485,7 +485,6 @@ const transformKPIData = (data) => {
 // Add this new function near your other functions
 const addNewFinancialKPI = async (branchId, date) => {
   try {
-    // Check if the new KPI already exists
     const { data, error } = await supabase
       .from('kpi_entries')
       .select('*')
@@ -497,7 +496,6 @@ const addNewFinancialKPI = async (branchId, date) => {
 
     if (error) throw error;
 
-    // If KPI doesn't exist, create it
     if (data.length === 0) {
       const { error: insertError } = await supabase
         .from('kpi_entries')
@@ -509,7 +507,7 @@ const addNewFinancialKPI = async (branchId, date) => {
           kpi_name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
           target: '55%',
           actual: '',
-          status: '',
+          status: 'in-progress', // Set a default status instead of empty string
           actions: ''
         });
 
@@ -569,26 +567,42 @@ const handleStatusChange = async (mIndex, kIndex, newValue) => {
   const kpi = metric.kpis[kIndex];
 
   try {
-    const { error } = await supabase
+    // First try to insert
+    const { error: insertError } = await supabase
       .from('kpi_entries')
-      .update({ 
+      .insert({
+        meeting_type: MEETING_TYPE,
+        branch_id: selectedTab,
+        meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+        category: metric.category,
+        kpi_name: kpi.name,
         status: newValue,
-        updated_at: new Date().toISOString()
+        target: kpi.target,
+        actual: kpi.actual,
+        actions: kpi.actions
       })
-      .eq('meeting_type', MEETING_TYPE)
-      .eq('branch_id', selectedTab)
-      .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-      .eq('category', metric.category)
-      .eq('kpi_name', kpi.name);
+      .select();
 
-    if (error) throw error;
+    // If insert fails (likely because record exists), try update
+    if (insertError) {
+      const { error: updateError } = await supabase
+        .from('kpi_entries')
+        .update({ status: newValue })
+        .eq('meeting_type', MEETING_TYPE)
+        .eq('branch_id', selectedTab)
+        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+        .eq('category', metric.category)
+        .eq('kpi_name', kpi.name);
+
+      if (updateError) throw updateError;
+    }
 
     // Update local state
     const updatedMetrics = [...metricsData];
     updatedMetrics[mIndex].kpis[kIndex].status = newValue;
     setMetricsData(updatedMetrics);
   } catch (err) {
-    setError(err.message);
+    console.error('Error updating status:', err);
   }
 };
 
@@ -597,25 +611,42 @@ const handleActualChange = async (mIndex, kIndex, newValue) => {
   const kpi = metric.kpis[kIndex];
 
   try {
-    const { error } = await supabase
+    // First try to insert
+    const { error: insertError } = await supabase
       .from('kpi_entries')
-      .update({ 
+      .insert({
+        meeting_type: MEETING_TYPE,
+        branch_id: selectedTab,
+        meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+        category: metric.category,
+        kpi_name: kpi.name,
         actual: newValue,
-        updated_at: new Date().toISOString()
+        target: kpi.target,
+        status: kpi.status || 'in-progress',
+        actions: kpi.actions
       })
-      .eq('meeting_type', MEETING_TYPE)
-      .eq('branch_id', selectedTab)
-      .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-      .eq('category', metric.category)
-      .eq('kpi_name', kpi.name);
+      .select();
 
-    if (error) throw error;
+    // If insert fails (likely because record exists), try update
+    if (insertError) {
+      const { error: updateError } = await supabase
+        .from('kpi_entries')
+        .update({ actual: newValue })
+        .eq('meeting_type', MEETING_TYPE)
+        .eq('branch_id', selectedTab)
+        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+        .eq('category', metric.category)
+        .eq('kpi_name', kpi.name);
 
+      if (updateError) throw updateError;
+    }
+
+    // Update local state
     const updatedMetrics = [...metricsData];
     updatedMetrics[mIndex].kpis[kIndex].actual = newValue;
     setMetricsData(updatedMetrics);
   } catch (err) {
-    setError(err.message);
+    console.error('Error updating actual:', err);
   }
 };
 
@@ -664,17 +695,48 @@ const debouncedSaveActions = useMemo(
   [selectedTab, selectedDate]
 );
 
-const handleActionsChange = (mIndex, kIndex, newValue) => {
+const handleActionsChange = async (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
   const kpi = metric.kpis[kIndex];
 
-  // Update UI immediately
-  const updatedMetrics = [...metricsData];
-  updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
-  setMetricsData(updatedMetrics);
+  try {
+    // First try to insert
+    const { error: insertError } = await supabase
+      .from('kpi_entries')
+      .insert({
+        meeting_type: MEETING_TYPE,
+        branch_id: selectedTab,
+        meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+        category: metric.category,
+        kpi_name: kpi.name,
+        actions: newValue,
+        target: kpi.target,
+        actual: kpi.actual,
+        status: kpi.status || 'in-progress'
+      })
+      .select();
 
-  // Save to database after debounce
-  debouncedSaveActions(mIndex, kIndex, newValue, metric, kpi);
+    // If insert fails (likely because record exists), try update
+    if (insertError) {
+      const { error: updateError } = await supabase
+        .from('kpi_entries')
+        .update({ actions: newValue })
+        .eq('meeting_type', MEETING_TYPE)
+        .eq('branch_id', selectedTab)
+        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+        .eq('category', metric.category)
+        .eq('kpi_name', kpi.name);
+
+      if (updateError) throw updateError;
+    }
+
+    // Update local state
+    const updatedMetrics = [...metricsData];
+    updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
+    setMetricsData(updatedMetrics);
+  } catch (err) {
+    console.error('Error updating actions:', err);
+  }
 };
 
 // Then define branches (this got mixed up in your code)
@@ -1001,18 +1063,17 @@ const branches = [
           />
         </td>
         <td className="px-4 py-2 align-top">
-          <select 
-            value={kpi.status}
-            onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
-            className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
-          >
-            <option value="">Select a status...</option>
-            <option value="on-track">✅ On Track</option>
-            <option value="resolving">⏳ Resolving</option>
-            <option value="in-progress">🔄 In Progress</option>
-            <option value="in-training">📚 In Training</option>
-            <option value="off-track">⚠️ Off Track</option>
-          </select>
+        <select 
+  value={kpi.status || 'in-progress'} // Set default value
+  onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+  className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+>
+  <option value="on-track">✅ On Track</option>
+  <option value="resolving">⏳ Resolving</option>
+  <option value="in-progress">🔄 In Progress</option>
+  <option value="in-training">📚 In Training</option>
+  <option value="off-track">⚠️ Off Track</option>
+</select>
         </td>
         <td className="px-4 py-2">
   <textarea
