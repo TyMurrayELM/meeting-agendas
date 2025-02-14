@@ -231,6 +231,7 @@ const meetingData = {
       kpis: [
         {
           name: 'Maintenance Checklist Adoption',
+          explanation: 'Increase efficiencies, lower cost and improve quality',
           target: '100% adoption',
           actual: '',
           status: '',
@@ -414,7 +415,7 @@ const addNewFinancialKPI = async (branchId, date) => {
           meeting_date: new Date(date).toISOString().split('T')[0],
           category: 'Financial',
           kpi_name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
-          target: '45%',
+          target: '55%',
           actual: '',
           status: '',
           actions: ''
@@ -815,15 +816,22 @@ const branches = [
     metric.kpis.map((kpi, kIndex) => (
       <tr key={`${mIndex}-${kIndex}`} className="border-b border-gray-100">
         <td className="px-4 py-2 align-top">
-  <div className="font-medium">{metric.category}</div>
-  <div className="text-xs text-gray-500 mt-1 pr-2">
-    {metric.category === 'Financial' && "Strategic Objective: Increase profitability, grow revenue & reduce cost"}
-    {metric.category === 'Client' && "Strategic Objective: Maintain Client Retention"}
-    {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
-    {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop our Safety Culture, Increase Employee retention, Upskill employees"}
-  </div>
-</td>
-        <td className="px-4 py-2 align-top">{kpi.name}</td>
+          <div className="font-medium">{metric.category}</div>
+          <div className="text-xs text-gray-500 mt-1 pr-2">
+            {metric.category === 'Financial' && "Strategic Objective: Increase profitability, grow revenue & reduce cost"}
+            {metric.category === 'Client' && "Strategic Objective: Maintain Client Retention"}
+            {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
+            {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop our Safety Culture, Increase Employee retention, Upskill employees"}
+          </div>
+        </td>
+        <td className="px-4 py-2 align-top">
+          <div>{kpi.name}</div>
+          {kpi.explanation && (
+            <div className="text-xs text-gray-500 mt-1 pr-2">
+              {kpi.explanation}
+            </div>
+          )}
+        </td>
         <td className="px-4 py-2 align-top">{kpi.target || '-'}</td>
         <td className="px-1 py-2 w-12 align-top">
           <input
