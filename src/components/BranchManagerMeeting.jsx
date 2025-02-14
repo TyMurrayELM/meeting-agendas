@@ -216,6 +216,13 @@ const meetingData = {
           actual: '',
           status: '',
           actions: ''
+        },
+        {
+          name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
+          target: '45%',
+          actual: '',
+          status: '',
+          actions: ''
         }
       ]
     },
@@ -382,16 +389,59 @@ const transformKPIData = (data) => {
   );
 };
 
+// Add this new function near your other functions
+const addNewFinancialKPI = async (branchId, date) => {
+  try {
+    // Check if the new KPI already exists
+    const { data, error } = await supabase
+      .from('kpi_entries')
+      .select('*')
+      .eq('meeting_type', MEETING_TYPE)
+      .eq('branch_id', branchId)
+      .eq('meeting_date', new Date(date).toISOString().split('T')[0])
+      .eq('category', 'Financial')
+      .eq('kpi_name', 'Maintenance Direct Labor Cost (DL%) - Onsites');
+
+    if (error) throw error;
+
+    // If KPI doesn't exist, create it
+    if (data.length === 0) {
+      const { error: insertError } = await supabase
+        .from('kpi_entries')
+        .insert({
+          meeting_type: MEETING_TYPE,
+          branch_id: branchId,
+          meeting_date: new Date(date).toISOString().split('T')[0],
+          category: 'Financial',
+          kpi_name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
+          target: '45%',
+          actual: '',
+          status: '',
+          actions: ''
+        });
+
+      if (insertError) throw insertError;
+    }
+  } catch (err) {
+    console.error('Error adding new Financial KPI:', err);
+  }
+};
+
 // Add this useEffect
 useEffect(() => {
   console.log('Current tab and date:', { selectedTab, selectedDate });
   if (selectedTab !== 'guide') {
-    fetchKPIData(selectedTab, selectedDate).then(data => {
-      console.log('Fetched data:', data);
-      setMetricsData(data);
-    }).catch(error => {
-      console.error('Error fetching data:', error);
-    });
+    // First fetch existing data
+    fetchKPIData(selectedTab, selectedDate)
+      .then(data => {
+        console.log('Fetched data:', data);
+        setMetricsData(data);
+        // Then ensure new KPI exists
+        return addNewFinancialKPI(selectedTab, selectedDate);
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
   }
 }, [selectedTab, selectedDate]);
 
