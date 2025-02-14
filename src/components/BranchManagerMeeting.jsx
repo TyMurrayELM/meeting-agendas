@@ -471,22 +471,27 @@ const transformKPIData = (data) => {
     if (!acc[entry.category]) {
       acc[entry.category] = { category: entry.category, kpis: [] };
     }
+
+    // Find the matching KPI in meetingData to get the explanation
+    const originalKPI = meetingData.metrics
+      .find(m => m.category === entry.category)
+      ?.kpis.find(k => k.name === entry.kpi_name);
+
     acc[entry.category].kpis.push({
       name: entry.kpi_name,
       target: entry.target,
       actual: entry.actual,
       status: entry.status,
-      actions: entry.actions
+      actions: entry.actions,
+      explanation: originalKPI?.explanation || '' // Add back the explanation
     });
     return acc;
   }, {});
 
-  // First sort the KPIs within each category
   Object.values(groupedData).forEach(group => {
     group.kpis.sort((a, b) => a.name.localeCompare(b.name));
   });
 
-  // Then sort by category name
   return Object.values(groupedData).sort((a, b) => 
     a.category.localeCompare(b.category)
   );
