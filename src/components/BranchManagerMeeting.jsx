@@ -414,64 +414,46 @@ const meetingData = {
 // Add these new functions first
 const fetchKPIData = async (branchId, date) => {
   try {
-    const formattedDate = new Date(date).toISOString().split('T')[0];
-    console.log('Fetching KPI data:', { 
-      branchId, 
-      formattedDate,
-      MEETING_TYPE 
-    });
+    console.log('Fetching KPI data:', { branchId, date, MEETING_TYPE });
     setLoading(true);
-    
     const { data, error } = await supabase
       .from('kpi_entries')
       .select('*')
       .eq('meeting_type', MEETING_TYPE)
       .eq('branch_id', branchId)
-      .eq('meeting_date', formattedDate);
+      .eq('meeting_date', new Date(date).toISOString().split('T')[0]);
 
     if (error) throw error;
 
-    console.log(`Found ${data?.length || 0} entries for branch ${branchId}`);
-
     // If no data exists for this date/branch, create initial entries
     if (data.length === 0) {
-      console.log(`Creating initial entries for branch ${branchId}`);
       const initialEntries = meetingData.metrics.flatMap(metric => 
         metric.kpis.map(kpi => ({
           meeting_type: MEETING_TYPE,
           branch_id: branchId,
-          meeting_date: formattedDate,
+          meeting_date: new Date(date).toISOString().split('T')[0],
           category: metric.category,
           kpi_name: kpi.name,
           target: kpi.target,
           actual: '',
-          status: '',
+          status: 'in-progress',
           actions: ''
         }))
       );
 
-      console.log(`Inserting ${initialEntries.length} entries for branch ${branchId}`);
       const { data: newData, error: insertError } = await supabase
         .from('kpi_entries')
         .insert(initialEntries)
         .select();
 
-      if (insertError) {
-        console.error('Error inserting initial data:', insertError);
-        throw insertError;
-      }
+      if (insertError) throw insertError;
       
-      console.log(`Successfully created ${newData?.length} entries for branch ${branchId}`);
       return transformKPIData(newData);
     }
 
-    console.log('Transforming existing data for branch:', branchId);
-    const transformed = transformKPIData(data);
-    console.log('Transformed data:', transformed);
-    return transformed;
+    return transformKPIData(data);
     
   } catch (err) {
-    console.error(`Error in fetchKPIData for branch ${branchId}:`, err);
     setError(err.message);
     return meetingData.metrics; // Fallback to initial data
   } finally {
@@ -527,7 +509,7 @@ const addNewFinancialKPI = async (branchId, date) => {
           kpi_name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
           target: '55%',
           actual: '',
-          status: '',
+          status: 'in-progress',
           actions: ''
         });
 
@@ -652,7 +634,7 @@ const handleActionsChange = async (mIndex, kIndex, newValue) => {
       kpi: kpi.name
     });
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('kpi_entries')
       .update({ 
         actions: newValue,
@@ -662,16 +644,27 @@ const handleActionsChange = async (mIndex, kIndex, newValue) => {
       .eq('branch_id', selectedTab)
       .eq('meeting_date', formattedDate)
       .eq('category', metric.category)
-      .eq('kpi_name', kpi.name);
+      .eq('kpi_name', kpi.name)
+      .select();  // Add this to get response data
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase update error:', error);
+      throw error;
+    }
+
+    console.log('Update response:', data);
 
     // Update local state
     const updatedMetrics = [...metricsData];
     updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
     setMetricsData(updatedMetrics);
   } catch (err) {
-    console.error('Error saving action:', err);
+    console.error('Error saving action:', err, {
+      branch: selectedTab,
+      date: formattedDate,
+      category: metric.category,
+      kpi: kpi.name
+    });
   }
 };
 
