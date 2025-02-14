@@ -822,7 +822,16 @@ const branches = [
     </tr>
   ) : metricsData.map((metric, mIndex) => (
     metric.kpis.map((kpi, kIndex) => (
-      <tr key={`${mIndex}-${kIndex}`} className="border-b border-gray-100">
+      <tr 
+  key={`${mIndex}-${kIndex}`} 
+  className={`border-b border-gray-100 ${
+    metric.category === 'Client' ? 'bg-blue-50' :
+    metric.category === 'Financial' ? 'bg-green-50' :
+    metric.category === 'Internal' ? 'bg-purple-50' :
+    metric.category === 'People, Learning & Growth' ? 'bg-orange-50' :
+    'bg-white'
+  }`}
+>
         <td className="px-4 py-2 align-top">
           <div className="font-medium">{metric.category}</div>
           <div className="text-xs text-gray-500 mt-1 pr-2">
