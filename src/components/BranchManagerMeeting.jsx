@@ -386,9 +386,14 @@ const meetingData = {
 
   const generateBiWeeklyTuesdays = () => {
     const dates = [];
-    let currentDate = new Date(2025, 1, 18); // Feb 18, 2025
-
-    while (currentDate.getFullYear() === 2025) {
+    const startDate = new Date(2025, 1, 18); // Feb 18, 2025
+    let currentDate = new Date(startDate);
+  
+    // Generate dates for 2 years from start date
+    const endDate = new Date(startDate);
+    endDate.setFullYear(endDate.getFullYear() + 2);
+  
+    while (currentDate < endDate) {
       dates.push(currentDate.toLocaleDateString('en-US', { 
         month: 'numeric', 
         day: 'numeric', 
@@ -476,7 +481,12 @@ const transformKPIData = (data) => {
     return acc;
   }, {});
 
-  // Convert to array and sort by category name
+  // First sort the KPIs within each category
+  Object.values(groupedData).forEach(group => {
+    group.kpis.sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  // Then sort by category name
   return Object.values(groupedData).sort((a, b) => 
     a.category.localeCompare(b.category)
   );
