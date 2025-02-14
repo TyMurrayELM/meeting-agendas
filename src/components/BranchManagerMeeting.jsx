@@ -216,7 +216,7 @@ const meetingData = {
         },
         {
           name: 'Management Changes',
-          explanation: 'Track and manage property management transitions',
+          explanation: 'Track and work through property management transitions',
           target: '-',
           actual: '',
           status: '',
@@ -224,7 +224,7 @@ const meetingData = {
         },
         {
           name: 'Cancellations',
-          explanation: 'Monitor and analyze contract cancellations',
+          explanation: 'Monitor and follow processes for contract cancellations',
           target: '-',
           actual: '',
           status: '',
@@ -232,7 +232,7 @@ const meetingData = {
         },
         {
           name: 'New Jobs',
-          explanation: 'Track new jobs and prepare for start-ups',
+          explanation: 'Track new job start-ups and prepare for service start',
           target: '-',
           actual: '',
           status: '',
@@ -253,6 +253,7 @@ const meetingData = {
         },
         {
           name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
+          explanation: 'Monitor and optimize labor cost efficiency',
           target: '55%',
           actual: '',
           status: '',
@@ -260,7 +261,7 @@ const meetingData = {
         },
         {
           name: 'Client Retention Rate',
-          explanation: 'Retain Revenue from Maintenance Clients',
+          explanation: 'Retain current maintenance clients',
           target: '-',
           actual: '',
           status: '',
@@ -303,7 +304,7 @@ const meetingData = {
         {
           name: 'Hiring Needs',
           target: 'Fill critical positions',
-          explanation: '',
+          explanation: 'Identify any employee needs',
           actual: '',
           status: '',
           actions: ''
@@ -875,7 +876,7 @@ const branches = [
           <div className="font-medium">{metric.category}</div>
           <div className="text-xs text-gray-500 mt-1 pr-2">
             {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
-            {metric.category === 'Client' && "Strategic Objective: Retain Client's Business"}
+            {metric.category === 'Client' && "Strategic Objective: Retain Client Business"}
             {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
             {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
           </div>
