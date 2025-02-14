@@ -596,21 +596,9 @@ const handleActualChange = async (mIndex, kIndex, newValue) => {
 const debouncedSaveFacilitator = useMemo(
   () => _.debounce(async (newValue) => {
     try {
-      const { data: existingData, error: fetchError } = await supabase
-        .from('meeting_metadata')
-        .select('*')
-        .eq('meeting_type', MEETING_TYPE)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-
       const { error } = await supabase
         .from('meeting_metadata')
         .upsert({
-          id: existingData?.id,
           meeting_type: MEETING_TYPE,
           meeting_date: new Date(selectedDate).toISOString().split('T')[0],
           facilitator: newValue,
@@ -622,7 +610,7 @@ const debouncedSaveFacilitator = useMemo(
     } catch (err) {
       console.error('Error updating facilitator:', err);
     }
-  }, 500), // Wait 500ms after last keystroke before saving
+  }, 1000), // Increased to 1 second
   [selectedDate, currentBooks]
 );
 
@@ -817,8 +805,9 @@ const branches = [
   type="text"
   value={facilitator}
   onChange={(e) => {
-    setFacilitator(e.target.value); // Update UI immediately
-    debouncedSaveFacilitator(e.target.value); // Debounced save to database
+    const newValue = e.target.value;
+    setFacilitator(newValue); // Just update local state
+    debouncedSaveFacilitator(newValue); // Queue the save
   }}
   className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
   placeholder="Enter facilitator name..."
