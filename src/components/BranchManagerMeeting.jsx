@@ -213,12 +213,14 @@ const meetingData = {
         {
           name: 'Maintenance Direct Labor Cost (DL%)',
           target: '45%',
+          explanation: 'Reduce costs and right-size labor',
           actual: '',
           status: '',
           actions: ''
         },
         {
           name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
+          explanation: 'Reduce costs and right-size labor',
           target: '45%',
           actual: '',
           status: '',
@@ -259,6 +261,7 @@ const meetingData = {
         {
           name: 'Hiring Needs',
           target: 'Fill critical positions',
+          explanation: '',
           actual: '',
           status: '',
           actions: ''
@@ -272,7 +275,8 @@ const meetingData = {
         },
         {
           name: 'Employee Engagement',
-          target: 'Recognize and appreciate employee contributions, achievements, milestones, and/or behaviors that support organizational goals and values',
+          target: '',
+          explanation: 'Recognize and appreciate employee contributions, achievements, milestones, and/or behaviors that support organizational goals and values',
           actual: '',
           status: '',
           actions: ''
@@ -818,10 +822,10 @@ const branches = [
         <td className="px-4 py-2 align-top">
           <div className="font-medium">{metric.category}</div>
           <div className="text-xs text-gray-500 mt-1 pr-2">
-            {metric.category === 'Financial' && "Strategic Objective: Increase profitability, grow revenue & reduce cost"}
+            {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
             {metric.category === 'Client' && "Strategic Objective: Maintain Client Retention"}
             {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
-            {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop our Safety Culture, Increase Employee retention, Upskill employees"}
+            {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop our safety culture, Increase employee retention, Upskill employees"}
           </div>
         </td>
         <td className="px-4 py-2 align-top">
