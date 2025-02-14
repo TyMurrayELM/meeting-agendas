@@ -146,14 +146,22 @@ const weeks = [
 
   const getCurrentData = (branchId) => {
     const weekKey = `${selectedWeek.week}-${selectedWeek.date}`;
+    console.log('Getting data for:', weekKey, branchId);
+    console.log('Current branchData:', branchData);
+    
     if (!branchData[weekKey] || !branchData[weekKey][branchId]) {
+      console.log('No data found, returning default meetingData');
       return meetingData;
     }
+    console.log('Found data:', branchData[weekKey][branchId]);
     return branchData[weekKey][branchId];
   };
   
   const handleDataUpdate = (branchId, category, kpiIndex, field, value) => {
     const weekKey = `${selectedWeek.week}-${selectedWeek.date}`;
+    console.log('Saving data for:', weekKey, branchId);
+    console.log('Field being updated:', field, 'with value:', value);
+    
     setBranchData(prevData => {
       const newData = { ...prevData };
       if (!newData[weekKey]) {
@@ -173,6 +181,7 @@ const weeks = [
         metrics
       };
       
+      console.log('Updated data structure:', newData);
       return newData;
     });
   };
