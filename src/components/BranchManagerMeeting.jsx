@@ -245,16 +245,23 @@ const meetingData = {
       kpis: [
         {
           name: 'Maintenance Direct Labor Cost (DL%)',
+          explanation: 'Monitor and optimize labor cost efficiency',
           target: '45%',
-          explanation: 'Reduce costs and right-size labor',
           actual: '',
           status: '',
           actions: ''
         },
         {
           name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
-          explanation: 'Reduce costs and right-size labor',
           target: '55%',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Client Retention Rate',
+          explanation: 'Retain Revenue from Maintenance Clients',
+          target: '-',
           actual: '',
           status: '',
           actions: ''
@@ -868,7 +875,7 @@ const branches = [
           <div className="font-medium">{metric.category}</div>
           <div className="text-xs text-gray-500 mt-1 pr-2">
             {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
-            {metric.category === 'Client' && "Strategic Objective: Maintain Client Retention"}
+            {metric.category === 'Client' && "Strategic Objective: Retain Client's Business"}
             {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
             {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
           </div>
