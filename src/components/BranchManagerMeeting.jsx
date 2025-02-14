@@ -48,32 +48,32 @@ const agaveLogo = new URL('../assets/logos/agave.png', import.meta.url).href
 // Add these new handlers near your other handlers
 const fetchMeetingMetadata = async (date) => {
   try {
-    console.log('Fetching metadata for date:', date); // Debug log
-    
+    console.log('Fetching metadata for date:', date);
     const formattedDate = new Date(date).toISOString().split('T')[0];
-    console.log('Formatted date:', formattedDate); // Debug log
     
     const { data, error } = await supabase
       .from('meeting_metadata')
       .select('*')
       .eq('meeting_type', MEETING_TYPE)
       .eq('meeting_date', formattedDate)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to handle null case better
 
-    console.log('Fetched data:', data); // Debug log
-    console.log('Fetch error:', error); // Debug log
+    console.log('Fetched metadata:', { data, error });
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error fetching metadata:', error);
       return;
     }
 
     if (data) {
-      console.log('Setting state with existing data:', data); // Debug log
+      console.log('Setting state with:', {
+        books: data.current_books,
+        facilitator: data.facilitator
+      });
       setCurrentBooks(data.current_books || []);
       setFacilitator(data.facilitator || '');
     } else {
-      console.log('No existing data, creating new entry'); // Debug log
+      console.log('No existing data, creating new entry');
       const { data: newData, error: insertError } = await supabase
         .from('meeting_metadata')
         .insert({
@@ -81,17 +81,17 @@ const fetchMeetingMetadata = async (date) => {
           meeting_date: formattedDate,
           current_books: meetingData.currentBooks,
           facilitator: '',
-          updated_at: new Date().toISOString() // Add this
+          updated_at: new Date().toISOString()
         })
         .select()
         .single();
 
       if (insertError) {
-        console.error('Insert error:', insertError); // Debug log
+        console.error('Insert error:', insertError);
         throw insertError;
       }
 
-      console.log('Created new data:', newData); // Debug log
+      console.log('Created new metadata:', newData);
       if (newData) {
         setCurrentBooks(newData.current_books || []);
         setFacilitator(newData.facilitator || '');
@@ -104,20 +104,41 @@ const fetchMeetingMetadata = async (date) => {
 
 const handleFacilitatorChange = async (newValue) => {
   try {
+    console.log('Updating facilitator with:', {
+      date: selectedDate,
+      facilitator: newValue,
+      books: currentBooks
+    });
+
+    // First check if record exists
+    const { data: existingData, error: fetchError } = await supabase
+      .from('meeting_metadata')
+      .select('*')
+      .eq('meeting_type', MEETING_TYPE)
+      .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      throw fetchError;
+    }
+
     const { error } = await supabase
       .from('meeting_metadata')
       .upsert({
+        id: existingData?.id, // Include if exists
         meeting_type: MEETING_TYPE,
         meeting_date: new Date(selectedDate).toISOString().split('T')[0],
         facilitator: newValue,
-        current_books: currentBooks, // Add this line to preserve books
+        current_books: currentBooks || [],
         updated_at: new Date().toISOString()
       });
 
     if (error) {
-      console.error('Supabase error:', error); // Add explicit error logging
+      console.error('Supabase error:', error);
       throw error;
     }
+
+    console.log('Successfully updated facilitator');
     setFacilitator(newValue);
   } catch (err) {
     console.error('Error updating facilitator:', err);
