@@ -49,44 +49,49 @@ const agaveLogo = new URL('../assets/logos/agave.png', import.meta.url).href
 const fetchMeetingMetadata = async (date) => {
   try {
     console.log('Fetching metadata for date:', date); // Debug log
+    
+    const formattedDate = new Date(date).toISOString().split('T')[0];
+    console.log('Formatted date:', formattedDate); // Debug log
+    
     const { data, error } = await supabase
       .from('meeting_metadata')
       .select('*')
       .eq('meeting_type', MEETING_TYPE)
-      .eq('meeting_date', new Date(date).toISOString().split('T')[0])
+      .eq('meeting_date', formattedDate)
       .single();
+
+    console.log('Fetched data:', data); // Debug log
+    console.log('Fetch error:', error); // Debug log
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching metadata:', error);
       return;
     }
 
-    console.log('Fetched metadata:', data); // Debug log
-
     if (data) {
+      console.log('Setting state with existing data:', data); // Debug log
       setCurrentBooks(data.current_books || []);
       setFacilitator(data.facilitator || '');
     } else {
-      // If no data exists, create initial entry
+      console.log('No existing data, creating new entry'); // Debug log
       const { data: newData, error: insertError } = await supabase
         .from('meeting_metadata')
         .insert({
           meeting_type: MEETING_TYPE,
-          meeting_date: new Date(date).toISOString().split('T')[0],
+          meeting_date: formattedDate,
           current_books: meetingData.currentBooks,
           facilitator: '',
-          updated_at: new Date().toISOString() // Add this line
+          updated_at: new Date().toISOString() // Add this
         })
         .select()
         .single();
 
       if (insertError) {
-        console.error('Error creating initial metadata:', insertError);
+        console.error('Insert error:', insertError); // Debug log
         throw insertError;
       }
 
-      console.log('Created new metadata:', newData); // Debug log
-
+      console.log('Created new data:', newData); // Debug log
       if (newData) {
         setCurrentBooks(newData.current_books || []);
         setFacilitator(newData.facilitator || '');
