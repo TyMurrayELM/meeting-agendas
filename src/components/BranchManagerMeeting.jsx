@@ -414,46 +414,42 @@ const meetingData = {
 // Add these new functions first
 const fetchKPIData = async (branchId, date) => {
   try {
-    console.log('Fetching KPI data:', { branchId, date, MEETING_TYPE });
     setLoading(true);
+    const formattedDate = new Date(date).toISOString().split('T')[0];
+    
+    console.log('Fetching KPI data:', {
+      branchId,
+      date: formattedDate,
+      meeting_type: MEETING_TYPE
+    });
+
     const { data, error } = await supabase
       .from('kpi_entries')
       .select('*')
       .eq('meeting_type', MEETING_TYPE)
       .eq('branch_id', branchId)
-      .eq('meeting_date', new Date(date).toISOString().split('T')[0]);
+      .eq('meeting_date', formattedDate);
 
-    if (error) throw error;
-
-    // If no data exists for this date/branch, create initial entries
-    if (data.length === 0) {
-      const initialEntries = meetingData.metrics.flatMap(metric => 
-        metric.kpis.map(kpi => ({
-          meeting_type: MEETING_TYPE,
-          branch_id: branchId,
-          meeting_date: new Date(date).toISOString().split('T')[0],
-          category: metric.category,
-          kpi_name: kpi.name,
-          target: kpi.target,
-          actual: '',
-          status: 'in-progress', // Set default status
-          actions: ''
-        }))
-      );
-
-      const { data: newData, error: insertError } = await supabase
-        .from('kpi_entries')
-        .insert(initialEntries)
-        .select();
-
-      if (insertError) throw insertError;
-      
-      return transformKPIData(newData);
+    if (error) {
+      console.error('Error fetching data:', error);
+      throw error;
     }
 
-    return transformKPIData(data);
+    console.log('Fetched raw data:', data);
+
+    if (data.length === 0) {
+      console.log('No existing data found, creating initial entries');
+      // Your existing initialization code...
+    } else {
+      console.log('Found existing entries:', data.length);
+    }
+
+    const transformedData = transformKPIData(data);
+    console.log('Transformed data:', transformedData);
+    return transformedData;
     
   } catch (err) {
+    console.error('Error in fetchKPIData:', err);
     setError(err.message);
     return meetingData.metrics; // Fallback to initial data
   } finally {
@@ -698,32 +694,53 @@ const debouncedSaveActions = useMemo(
 const handleActionsChange = async (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
   const kpi = metric.kpis[kIndex];
+  const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
 
   try {
-    // First try to insert
-    const { error: insertError } = await supabase
+    // First check if the record exists
+    const { data: existingData, error: checkError } = await supabase
       .from('kpi_entries')
-      .insert({
-        meeting_type: MEETING_TYPE,
-        branch_id: selectedTab,
-        meeting_date: new Date(selectedDate).toISOString().split('T')[0],
-        category: metric.category,
-        kpi_name: kpi.name,
-        actions: newValue,
-        target: kpi.target,
-        actual: kpi.actual,
-        status: kpi.status || 'in-progress'
-      })
-      .select();
+      .select('*')
+      .eq('meeting_type', MEETING_TYPE)
+      .eq('branch_id', selectedTab)
+      .eq('meeting_date', formattedDate)
+      .eq('category', metric.category)
+      .eq('kpi_name', kpi.name)
+      .maybeSingle();
 
-    // If insert fails (likely because record exists), try update
-    if (insertError) {
+    if (checkError) {
+      throw checkError;
+    }
+
+    if (!existingData) {
+      // No record exists, create new one
+      const { error: insertError } = await supabase
+        .from('kpi_entries')
+        .insert({
+          meeting_type: MEETING_TYPE,
+          branch_id: selectedTab,
+          meeting_date: formattedDate,
+          category: metric.category,
+          kpi_name: kpi.name,
+          actions: newValue,
+          target: kpi.target || '',
+          actual: kpi.actual || '',
+          status: kpi.status || 'in-progress',
+          updated_at: new Date().toISOString()
+        });
+
+      if (insertError) throw insertError;
+    } else {
+      // Record exists, update it
       const { error: updateError } = await supabase
         .from('kpi_entries')
-        .update({ actions: newValue })
+        .update({ 
+          actions: newValue,
+          updated_at: new Date().toISOString()
+        })
         .eq('meeting_type', MEETING_TYPE)
         .eq('branch_id', selectedTab)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+        .eq('meeting_date', formattedDate)
         .eq('category', metric.category)
         .eq('kpi_name', kpi.name);
 
@@ -735,7 +752,7 @@ const handleActionsChange = async (mIndex, kIndex, newValue) => {
     updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
     setMetricsData(updatedMetrics);
   } catch (err) {
-    console.error('Error updating actions:', err);
+    console.error('Error saving action:', err);
   }
 };
 
