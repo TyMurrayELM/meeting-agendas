@@ -830,13 +830,13 @@ const branches = [
           </div>
         </td>
         <td className="px-4 py-2 align-top">
-          <div>{kpi.name}</div>
-          {kpi.explanation && (
-            <div className="text-xs text-gray-500 mt-1 pr-2">
-              {kpi.explanation}
-            </div>
-          )}
-        </td>
+  <div className="font-medium">{kpi.name}</div>
+  {kpi.explanation && (
+    <div className="text-xs text-gray-500 mt-1 pr-2">
+      {kpi.explanation}
+    </div>
+  )}
+</td>
         <td className="px-4 py-2 align-top">{kpi.target || '-'}</td>
         <td className="px-1 py-2 w-12 align-top">
           <input
