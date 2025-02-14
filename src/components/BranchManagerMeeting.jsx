@@ -414,46 +414,64 @@ const meetingData = {
 // Add these new functions first
 const fetchKPIData = async (branchId, date) => {
   try {
-    console.log('Fetching KPI data:', { branchId, date, MEETING_TYPE });
+    const formattedDate = new Date(date).toISOString().split('T')[0];
+    console.log('Fetching KPI data:', { 
+      branchId, 
+      formattedDate,
+      MEETING_TYPE 
+    });
     setLoading(true);
+    
     const { data, error } = await supabase
       .from('kpi_entries')
       .select('*')
       .eq('meeting_type', MEETING_TYPE)
       .eq('branch_id', branchId)
-      .eq('meeting_date', new Date(date).toISOString().split('T')[0]);
+      .eq('meeting_date', formattedDate);
 
     if (error) throw error;
 
+    console.log(`Found ${data?.length || 0} entries for branch ${branchId}`);
+
     // If no data exists for this date/branch, create initial entries
     if (data.length === 0) {
+      console.log(`Creating initial entries for branch ${branchId}`);
       const initialEntries = meetingData.metrics.flatMap(metric => 
         metric.kpis.map(kpi => ({
           meeting_type: MEETING_TYPE,
           branch_id: branchId,
-          meeting_date: new Date(date).toISOString().split('T')[0],
+          meeting_date: formattedDate,
           category: metric.category,
           kpi_name: kpi.name,
           target: kpi.target,
-          actual: kpi.actual,
-          status: kpi.status,
-          actions: kpi.actions
+          actual: '',
+          status: '',
+          actions: ''
         }))
       );
 
+      console.log(`Inserting ${initialEntries.length} entries for branch ${branchId}`);
       const { data: newData, error: insertError } = await supabase
         .from('kpi_entries')
         .insert(initialEntries)
         .select();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error('Error inserting initial data:', insertError);
+        throw insertError;
+      }
       
+      console.log(`Successfully created ${newData?.length} entries for branch ${branchId}`);
       return transformKPIData(newData);
     }
 
-    return transformKPIData(data);
+    console.log('Transforming existing data for branch:', branchId);
+    const transformed = transformKPIData(data);
+    console.log('Transformed data:', transformed);
+    return transformed;
     
   } catch (err) {
+    console.error(`Error in fetchKPIData for branch ${branchId}:`, err);
     setError(err.message);
     return meetingData.metrics; // Fallback to initial data
   } finally {
@@ -621,40 +639,40 @@ const handleStatusChange = async (mIndex, kIndex, newValue) => {
 };
 
 // Add this inside your component, near the top with other handler definitions
-const debouncedSaveActions = useMemo(
-  () => _.debounce(async (mIndex, kIndex, newValue, metric, kpi) => {
-    try {
-      const { error } = await supabase
-        .from('kpi_entries')
-        .update({ 
-          actions: newValue,
-          updated_at: new Date().toISOString()
-        })
-        .eq('meeting_type', MEETING_TYPE)
-        .eq('branch_id', selectedTab)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-        .eq('category', metric.category)
-        .eq('kpi_name', kpi.name);
-
-      if (error) throw error;
-    } catch (err) {
-      setError(err.message);
-    }
-  }, 500),
-  [selectedTab, selectedDate]
-);
-
-const handleActionsChange = (mIndex, kIndex, newValue) => {
+const handleActionsChange = async (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
   const kpi = metric.kpis[kIndex];
+  const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
 
-  // Update UI immediately
-  const updatedMetrics = [...metricsData];
-  updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
-  setMetricsData(updatedMetrics);
+  try {
+    console.log('Saving action for:', {
+      branch: selectedTab,
+      date: formattedDate,
+      category: metric.category,
+      kpi: kpi.name
+    });
 
-  // Save to database after debounce
-  debouncedSaveActions(mIndex, kIndex, newValue, metric, kpi);
+    const { error } = await supabase
+      .from('kpi_entries')
+      .update({ 
+        actions: newValue,
+        updated_at: new Date().toISOString()
+      })
+      .eq('meeting_type', MEETING_TYPE)
+      .eq('branch_id', selectedTab)
+      .eq('meeting_date', formattedDate)
+      .eq('category', metric.category)
+      .eq('kpi_name', kpi.name);
+
+    if (error) throw error;
+
+    // Update local state
+    const updatedMetrics = [...metricsData];
+    updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
+    setMetricsData(updatedMetrics);
+  } catch (err) {
+    console.error('Error saving action:', err);
+  }
 };
 
 // Then define branches (this got mixed up in your code)
