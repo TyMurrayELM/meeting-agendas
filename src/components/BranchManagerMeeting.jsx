@@ -414,42 +414,46 @@ const meetingData = {
 // Add these new functions first
 const fetchKPIData = async (branchId, date) => {
   try {
+    console.log('Fetching KPI data:', { branchId, date, MEETING_TYPE });
     setLoading(true);
-    const formattedDate = new Date(date).toISOString().split('T')[0];
-    
-    console.log('Fetching KPI data:', {
-      branchId,
-      date: formattedDate,
-      meeting_type: MEETING_TYPE
-    });
-
     const { data, error } = await supabase
       .from('kpi_entries')
       .select('*')
       .eq('meeting_type', MEETING_TYPE)
       .eq('branch_id', branchId)
-      .eq('meeting_date', formattedDate);
+      .eq('meeting_date', new Date(date).toISOString().split('T')[0]);
 
-    if (error) {
-      console.error('Error fetching data:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('Fetched raw data:', data);
-
+    // If no data exists for this date/branch, create initial entries
     if (data.length === 0) {
-      console.log('No existing data found, creating initial entries');
-      // Your existing initialization code...
-    } else {
-      console.log('Found existing entries:', data.length);
+      const initialEntries = meetingData.metrics.flatMap(metric => 
+        metric.kpis.map(kpi => ({
+          meeting_type: MEETING_TYPE,
+          branch_id: branchId,
+          meeting_date: new Date(date).toISOString().split('T')[0],
+          category: metric.category,
+          kpi_name: kpi.name,
+          target: kpi.target,
+          actual: kpi.actual,
+          status: kpi.status,
+          actions: kpi.actions
+        }))
+      );
+
+      const { data: newData, error: insertError } = await supabase
+        .from('kpi_entries')
+        .insert(initialEntries)
+        .select();
+
+      if (insertError) throw insertError;
+      
+      return transformKPIData(newData);
     }
 
-    const transformedData = transformKPIData(data);
-    console.log('Transformed data:', transformedData);
-    return transformedData;
+    return transformKPIData(data);
     
   } catch (err) {
-    console.error('Error in fetchKPIData:', err);
     setError(err.message);
     return meetingData.metrics; // Fallback to initial data
   } finally {
@@ -481,6 +485,7 @@ const transformKPIData = (data) => {
 // Add this new function near your other functions
 const addNewFinancialKPI = async (branchId, date) => {
   try {
+    // Check if the new KPI already exists
     const { data, error } = await supabase
       .from('kpi_entries')
       .select('*')
@@ -492,6 +497,7 @@ const addNewFinancialKPI = async (branchId, date) => {
 
     if (error) throw error;
 
+    // If KPI doesn't exist, create it
     if (data.length === 0) {
       const { error: insertError } = await supabase
         .from('kpi_entries')
@@ -503,7 +509,7 @@ const addNewFinancialKPI = async (branchId, date) => {
           kpi_name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
           target: '55%',
           actual: '',
-          status: 'in-progress', // Set a default status instead of empty string
+          status: '',
           actions: ''
         });
 
@@ -558,114 +564,36 @@ useEffect(() => {
   fetchMeetingMetadata(selectedDate);
 }, [selectedDate]);
 
-const handleStatusChange = async (mIndex, kIndex, newValue) => {
-  const metric = metricsData[mIndex];
-  const kpi = metric.kpis[kIndex];
 
-  try {
-    // First try to insert
-    const { error: insertError } = await supabase
-      .from('kpi_entries')
-      .insert({
-        meeting_type: MEETING_TYPE,
-        branch_id: selectedTab,
-        meeting_date: new Date(selectedDate).toISOString().split('T')[0],
-        category: metric.category,
-        kpi_name: kpi.name,
-        status: newValue,
-        target: kpi.target,
-        actual: kpi.actual,
-        actions: kpi.actions
-      })
-      .select();
-
-    // If insert fails (likely because record exists), try update
-    if (insertError) {
-      const { error: updateError } = await supabase
-        .from('kpi_entries')
-        .update({ status: newValue })
-        .eq('meeting_type', MEETING_TYPE)
-        .eq('branch_id', selectedTab)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-        .eq('category', metric.category)
-        .eq('kpi_name', kpi.name);
-
-      if (updateError) throw updateError;
-    }
-
-    // Update local state
-    const updatedMetrics = [...metricsData];
-    updatedMetrics[mIndex].kpis[kIndex].status = newValue;
-    setMetricsData(updatedMetrics);
-  } catch (err) {
-    console.error('Error updating status:', err);
-  }
-};
 
 const handleActualChange = async (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
   const kpi = metric.kpis[kIndex];
 
   try {
-    // First try to insert
-    const { error: insertError } = await supabase
+    const { error } = await supabase
       .from('kpi_entries')
-      .insert({
-        meeting_type: MEETING_TYPE,
-        branch_id: selectedTab,
-        meeting_date: new Date(selectedDate).toISOString().split('T')[0],
-        category: metric.category,
-        kpi_name: kpi.name,
+      .update({ 
         actual: newValue,
-        target: kpi.target,
-        status: kpi.status || 'in-progress',
-        actions: kpi.actions
+        updated_at: new Date().toISOString()
       })
-      .select();
+      .eq('meeting_type', MEETING_TYPE)
+      .eq('branch_id', selectedTab)
+      .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
+      .eq('category', metric.category)
+      .eq('kpi_name', kpi.name);
 
-    // If insert fails (likely because record exists), try update
-    if (insertError) {
-      const { error: updateError } = await supabase
-        .from('kpi_entries')
-        .update({ actual: newValue })
-        .eq('meeting_type', MEETING_TYPE)
-        .eq('branch_id', selectedTab)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-        .eq('category', metric.category)
-        .eq('kpi_name', kpi.name);
+    if (error) throw error;
 
-      if (updateError) throw updateError;
-    }
-
-    // Update local state
     const updatedMetrics = [...metricsData];
     updatedMetrics[mIndex].kpis[kIndex].actual = newValue;
     setMetricsData(updatedMetrics);
   } catch (err) {
-    console.error('Error updating actual:', err);
+    setError(err.message);
   }
 };
 
-const debouncedSaveFacilitator = useMemo(
-  () => _.debounce(async (newValue) => {
-    try {
-      const { error } = await supabase
-        .from('meeting_metadata')
-        .upsert({
-          meeting_type: MEETING_TYPE,
-          meeting_date: new Date(selectedDate).toISOString().split('T')[0],
-          facilitator: newValue,
-          current_books: currentBooks || [],
-          updated_at: new Date().toISOString()
-        });
 
-      if (error) throw error;
-    } catch (err) {
-      console.error('Error updating facilitator:', err);
-    }
-  }, 1000), // Increased to 1 second
-  [selectedDate, currentBooks]
-);
 
 // Add this inside your component, near the top with other handler definitions
 const debouncedSaveActions = useMemo(
@@ -691,69 +619,17 @@ const debouncedSaveActions = useMemo(
   [selectedTab, selectedDate]
 );
 
-const handleActionsChange = async (mIndex, kIndex, newValue) => {
+const handleActionsChange = (mIndex, kIndex, newValue) => {
   const metric = metricsData[mIndex];
   const kpi = metric.kpis[kIndex];
-  const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
 
-  try {
-    // First check if the record exists
-    const { data: existingData, error: checkError } = await supabase
-      .from('kpi_entries')
-      .select('*')
-      .eq('meeting_type', MEETING_TYPE)
-      .eq('branch_id', selectedTab)
-      .eq('meeting_date', formattedDate)
-      .eq('category', metric.category)
-      .eq('kpi_name', kpi.name)
-      .maybeSingle();
+  // Update UI immediately
+  const updatedMetrics = [...metricsData];
+  updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
+  setMetricsData(updatedMetrics);
 
-    if (checkError) {
-      throw checkError;
-    }
-
-    if (!existingData) {
-      // No record exists, create new one
-      const { error: insertError } = await supabase
-        .from('kpi_entries')
-        .insert({
-          meeting_type: MEETING_TYPE,
-          branch_id: selectedTab,
-          meeting_date: formattedDate,
-          category: metric.category,
-          kpi_name: kpi.name,
-          actions: newValue,
-          target: kpi.target || '',
-          actual: kpi.actual || '',
-          status: kpi.status || 'in-progress',
-          updated_at: new Date().toISOString()
-        });
-
-      if (insertError) throw insertError;
-    } else {
-      // Record exists, update it
-      const { error: updateError } = await supabase
-        .from('kpi_entries')
-        .update({ 
-          actions: newValue,
-          updated_at: new Date().toISOString()
-        })
-        .eq('meeting_type', MEETING_TYPE)
-        .eq('branch_id', selectedTab)
-        .eq('meeting_date', formattedDate)
-        .eq('category', metric.category)
-        .eq('kpi_name', kpi.name);
-
-      if (updateError) throw updateError;
-    }
-
-    // Update local state
-    const updatedMetrics = [...metricsData];
-    updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
-    setMetricsData(updatedMetrics);
-  } catch (err) {
-    console.error('Error saving action:', err);
-  }
+  // Save to database after debounce
+  debouncedSaveActions(mIndex, kIndex, newValue, metric, kpi);
 };
 
 // Then define branches (this got mixed up in your code)
@@ -910,9 +786,8 @@ const branches = [
   type="text"
   value={facilitator}
   onChange={(e) => {
-    const newValue = e.target.value;
-    setFacilitator(newValue); // Just update local state
-    debouncedSaveFacilitator(newValue); // Queue the save
+    setFacilitator(e.target.value); // Immediately update UI
+    handleFacilitatorChange(e.target.value);
   }}
   className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
   placeholder="Enter facilitator name..."
@@ -1080,17 +955,18 @@ const branches = [
           />
         </td>
         <td className="px-4 py-2 align-top">
-        <select 
-  value={kpi.status || 'in-progress'} // Set default value
-  onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
-  className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
->
-  <option value="on-track">✅ On Track</option>
-  <option value="resolving">⏳ Resolving</option>
-  <option value="in-progress">🔄 In Progress</option>
-  <option value="in-training">📚 In Training</option>
-  <option value="off-track">⚠️ Off Track</option>
-</select>
+          <select 
+            value={kpi.status}
+            onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+            className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+          >
+            <option value="">Select a status...</option>
+            <option value="on-track">✅ On Track</option>
+            <option value="resolving">⏳ Resolving</option>
+            <option value="in-progress">🔄 In Progress</option>
+            <option value="in-training">📚 In Training</option>
+            <option value="off-track">⚠️ Off Track</option>
+          </select>
         </td>
         <td className="px-4 py-2">
   <textarea

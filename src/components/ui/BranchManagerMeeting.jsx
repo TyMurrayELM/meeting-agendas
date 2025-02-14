@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Card, 
   CardHeader, 
@@ -26,37 +26,19 @@ const BranchManagerMeeting = () => {
     }
   };
 
-// Current code
-const [selectedTab, setSelectedTab] = useState('guide');
-const [selectedWeek, setSelectedWeek] = useState({
-  week: 1,
-  date: '2/18/25'
-});
+  const [selectedTab, setSelectedTab] = useState('guide');
+  const [selectedWeek, setSelectedWeek] = useState({
+    week: 5,
+    date: '2/4/25'
+  });
 
-// Add these new lines after
-const [branchData, setBranchData] = useState({});
-
-// Then add these useEffect hooks right here (Step 2)
-useEffect(() => {
-  const savedData = localStorage.getItem('branchManagerData');
-  if (savedData) {
-    setBranchData(JSON.parse(savedData));
-  }
-}, []);
-
-useEffect(() => {
-  localStorage.setItem('branchManagerData', JSON.stringify(branchData));
-}, [branchData]);
-
-const weeks = [
-  { week: 1, date: '2/18/25' },
-  { week: 2, date: '3/4/25' },
-  { week: 3, date: '3/18/25' },
-  { week: 4, date: '4/1/25' },
-  { week: 5, date: '4/15/25' },
-  { week: 6, date: '4/29/25' },
-  { week: 7, date: '5/13/25' }
-];
+  const weeks = [
+    { week: 5, date: '2/4/25' },
+    { week: 4, date: '1/28/25' },
+    { week: 3, date: '1/21/25' },
+    { week: 2, date: '1/14/25' },
+    { week: 1, date: '1/7/25' }
+  ];
 
   const branches = [
     { id: 'SE', name: 'SE Manager', headerColor: 'bg-red-50' },
@@ -143,48 +125,6 @@ const weeks = [
     { id: 'guide', name: 'Meeting Guide' },
     ...branches
   ];
-
-  const getCurrentData = (branchId) => {
-    const weekKey = `${selectedWeek.week}-${selectedWeek.date}`;
-    console.log('Getting data for:', weekKey, branchId);
-    console.log('Current branchData:', branchData);
-    
-    if (!branchData[weekKey] || !branchData[weekKey][branchId]) {
-      console.log('No data found, returning default meetingData');
-      return meetingData;
-    }
-    console.log('Found data:', branchData[weekKey][branchId]);
-    return branchData[weekKey][branchId];
-  };
-  
-  const handleDataUpdate = (branchId, category, kpiIndex, field, value) => {
-    const weekKey = `${selectedWeek.week}-${selectedWeek.date}`;
-    console.log('Saving data for:', weekKey, branchId);
-    console.log('Field being updated:', field, 'with value:', value);
-    
-    setBranchData(prevData => {
-      const newData = { ...prevData };
-      if (!newData[weekKey]) {
-        newData[weekKey] = {};
-      }
-      if (!newData[weekKey][branchId]) {
-        newData[weekKey][branchId] = { ...meetingData };
-      }
-      
-      const metrics = [...newData[weekKey][branchId].metrics];
-      const metricIndex = metrics.findIndex(m => m.category === category);
-      const updatedKpi = { ...metrics[metricIndex].kpis[kpiIndex], [field]: value };
-      metrics[metricIndex].kpis[kpiIndex] = updatedKpi;
-      
-      newData[weekKey][branchId] = {
-        ...newData[weekKey][branchId],
-        metrics
-      };
-      
-      console.log('Updated data structure:', newData);
-      return newData;
-    });
-  };
 
   return (
     <div className="container mx-auto p-4 space-y-4">
@@ -312,50 +252,16 @@ const weeks = [
                      </tr>
                    </thead>
                    <tbody>
-                   {getCurrentData(branch.id).metrics.map((metric, mIndex) => (
+                     {meetingData.metrics.map((metric, mIndex) => (
                        metric.kpis.map((kpi, kIndex) => (
-<tr key={`${mIndex}-${kIndex}`} className="border-b border-gray-100">
-  <td className="px-4 py-2 font-medium">{metric.category}</td>
-  <td className="px-4 py-2">{kpi.name}</td>
-  <td className="px-4 py-2">
-    <input
-      type="text"
-      value={kpi.target || ''}
-      onChange={(e) => handleDataUpdate(branch.id, metric.category, kIndex, 'target', e.target.value)}
-      className="w-full border rounded px-2 py-1"
-    />
-  </td>
-  <td className="px-4 py-2">
-    <input
-      type="text"
-      value={kpi.actual || ''}
-      onChange={(e) => handleDataUpdate(branch.id, metric.category, kIndex, 'actual', e.target.value)}
-      className="w-full border rounded px-2 py-1"
-    />
-  </td>
-  <td className="px-4 py-2">
-    <select
-      value={kpi.status || ''}
-      onChange={(e) => handleDataUpdate(branch.id, metric.category, kIndex, 'status', e.target.value)}
-      className="w-full border rounded px-2 py-1"
-    >
-      <option value="">Select status</option>
-      <option value="on-track">On Track</option>
-      <option value="resolving">Resolving</option>
-      <option value="in-progress">In Progress</option>
-      <option value="in-training">In Training</option>
-      <option value="off-track">Off Track</option>
-    </select>
-  </td>
-  <td className="px-4 py-2">
-    <input
-      type="text"
-      value={kpi.actions || ''}
-      onChange={(e) => handleDataUpdate(branch.id, metric.category, kIndex, 'actions', e.target.value)}
-      className="w-full border rounded px-2 py-1"
-    />
-  </td>
-</tr>
+                         <tr key={`${mIndex}-${kIndex}`} className="border-b border-gray-100">
+                           <td className="px-4 py-2 font-medium">{metric.category}</td>
+                           <td className="px-4 py-2">{kpi.name}</td>
+                           <td className="px-4 py-2">{kpi.target || '-'}</td>
+                           <td className="px-4 py-2">{kpi.actual || '-'}</td>
+                           <td className="px-4 py-2">{renderStatus(kpi.status)}</td>
+                           <td className="px-4 py-2">{kpi.actions}</td>
+                         </tr>
                        ))
                      ))}
                    </tbody>
