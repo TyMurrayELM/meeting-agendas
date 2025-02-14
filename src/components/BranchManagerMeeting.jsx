@@ -305,8 +305,8 @@ const meetingData = {
         },
         {
           name: 'Client Retention Rate',
-          explanation: 'Retain current maintenance clients',
-          target: '-',
+          explanation: 'Retain current maintenance clients. Measured against Jan BOB',
+          target: '90%',
           actual: '',
           status: '',
           actions: ''
