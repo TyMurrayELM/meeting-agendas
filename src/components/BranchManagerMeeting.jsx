@@ -221,7 +221,7 @@ const meetingData = {
         {
           name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
           explanation: 'Reduce costs and right-size labor',
-          target: '45%',
+          target: '55%',
           actual: '',
           status: '',
           actions: ''
@@ -241,6 +241,7 @@ const meetingData = {
         },
         {
           name: 'Fleet Management',
+          explanation: 'Review vehicle and equipment needs or issues',
           target: '-',
           actual: '',
           status: '',
