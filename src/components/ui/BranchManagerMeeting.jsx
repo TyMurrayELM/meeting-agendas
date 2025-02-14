@@ -29,8 +29,8 @@ const BranchManagerMeeting = () => {
 // Current code
 const [selectedTab, setSelectedTab] = useState('guide');
 const [selectedWeek, setSelectedWeek] = useState({
-  week: 5,
-  date: '2/4/25'
+  week: 1,
+  date: '2/18/25'
 });
 
 // Add these new lines after
@@ -48,13 +48,15 @@ useEffect(() => {
   localStorage.setItem('branchManagerData', JSON.stringify(branchData));
 }, [branchData]);
 
-  const weeks = [
-    { week: 5, date: '2/4/25' },
-    { week: 4, date: '1/28/25' },
-    { week: 3, date: '1/21/25' },
-    { week: 2, date: '1/14/25' },
-    { week: 1, date: '1/7/25' }
-  ];
+const weeks = [
+  { week: 1, date: '2/18/25' },
+  { week: 2, date: '3/4/25' },
+  { week: 3, date: '3/18/25' },
+  { week: 4, date: '4/1/25' },
+  { week: 5, date: '4/15/25' },
+  { week: 6, date: '4/29/25' },
+  { week: 7, date: '5/13/25' }
+];
 
   const branches = [
     { id: 'SE', name: 'SE Manager', headerColor: 'bg-red-50' },
