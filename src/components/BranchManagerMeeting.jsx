@@ -105,11 +105,14 @@ const handleFacilitatorChange = async (newValue) => {
         meeting_type: MEETING_TYPE,
         meeting_date: new Date(selectedDate).toISOString().split('T')[0],
         facilitator: newValue,
-        current_books: currentBooks, // Add this line
+        current_books: currentBooks, // Add this line to preserve books
         updated_at: new Date().toISOString()
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error); // Add explicit error logging
+      throw error;
+    }
     setFacilitator(newValue);
   } catch (err) {
     console.error('Error updating facilitator:', err);
@@ -140,7 +143,7 @@ const handleBookChange = async (index, newValue) => {
 const handleAddBook = async () => {
   try {
     const newBooks = [...currentBooks, ''];
-    console.log('Adding new book, current books:', currentBooks, 'new books:', newBooks); // Debug log
+    console.log('Adding new book:', newBooks); // Debug log
 
     const { error } = await supabase
       .from('meeting_metadata')
@@ -148,13 +151,15 @@ const handleAddBook = async () => {
         meeting_type: MEETING_TYPE,
         meeting_date: new Date(selectedDate).toISOString().split('T')[0],
         current_books: newBooks,
-        facilitator: facilitator, // Add this line
+        facilitator: facilitator, // Add this to preserve facilitator
         updated_at: new Date().toISOString()
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error); // Add explicit error logging
+      throw error;
+    }
     setCurrentBooks(newBooks);
-    console.log('Books updated successfully'); // Debug log
   } catch (err) {
     console.error('Error adding book:', err);
   }
