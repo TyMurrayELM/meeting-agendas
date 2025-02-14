@@ -743,7 +743,7 @@ const branches = [
                   <table className="w-full border-collapse">
                   <thead>
   <tr className="border-b border-gray-200">
-    <th className="px-4 py-2 text-left font-semibold w-32">Category</th>
+    <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
     <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
     <th className="px-4 py-2 text-left font-semibold w-64">Target</th>
     <th className="px-4 py-2 text-left font-semibold w-32">Actual</th>
