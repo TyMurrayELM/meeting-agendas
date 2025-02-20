@@ -985,7 +985,9 @@ const branches = [
               </div>
             )}
           </td>
-          <td className="px-4 py-1.5 align-top leading-normal">{kpi.target || '-'}</td>
+          <td className="px-4 py-2 align-top">
+  <div className="leading-normal align-top">{kpi.target || '-'}</div>
+</td>
           <td className="px-4 py-2 align-top">
   {/* Removed text-xs, changed px-1 py-1 to px-4 py-2 */}
   <input
