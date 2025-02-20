@@ -940,10 +940,10 @@ const branches = [
     <tr className="border-b border-gray-200">
       <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
       <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
-      <th className="px-4 py-2 text-left font-semibold w-24">Target</th> {/* Changed from w-64 to w-24 */}
-      <th className="px-4 py-2 text-left font-semibold w-24">Actual</th> {/* Changed from w-32 to w-24 */}
+      <th className="px-4 py-2 text-left font-semibold w-24">Target</th>
+      <th className="px-4 py-2 text-left font-semibold w-24">Actual</th>
       <th className="px-4 py-2 text-left font-semibold w-48">Status</th>
-      <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th> {/* Remains flexible */}
+      <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
     </tr>
   </thead>
   <tbody>
@@ -986,13 +986,13 @@ const branches = [
             )}
           </td>
           <td className="px-4 py-2 align-top">{kpi.target || '-'}</td>
-          <td className="px-1 py-2 align-top"> {/* Removed w-12 */}
+          <td className="px-4 py-2 align-top"> {/* Changed px-1 to px-4 */}
             <input
               type="text"
               value={kpi.actual || ''}
               onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
               placeholder="..."
-              className="w-full px-1 py-1 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none text-xs"
+              className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none" {/* Removed text-xs, changed px-1 py-1 to px-4 py-2 */}
             />
           </td>
           <td className="px-4 py-2 align-top">
