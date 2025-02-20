@@ -993,7 +993,7 @@ const branches = [
     value={kpi.actual || ''}
     onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
     placeholder="..."
-    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top"
+    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
   />
 </td>
           <td className="px-4 py-2 align-top">
