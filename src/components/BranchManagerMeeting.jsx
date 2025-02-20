@@ -987,15 +987,15 @@ const branches = [
           </td>
           <td className="px-4 py-2 align-top">{kpi.target || '-'}</td>
           <td className="px-4 py-2 align-top">
-            {/* Removed text-xs, changed px-1 py-1 to px-4 py-2 */}
-            <input
-              type="text"
-              value={kpi.actual || ''}
-              onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
-              placeholder="..."
-              className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
-            />
-          </td>
+  {/* Removed text-xs, changed px-1 py-1 to px-4 py-2 */}
+  <input
+    type="text"
+    value={kpi.actual || ''}
+    onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+    placeholder="..."
+    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top"
+  />
+</td>
           <td className="px-4 py-2 align-top">
             <select 
               value={kpi.status}
