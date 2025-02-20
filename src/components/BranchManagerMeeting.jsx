@@ -941,86 +941,84 @@ const branches = [
             <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
           </tr>
         </thead>
-        <tbody>
-          <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
-            {loading ? (
-              <tr>
-                <td colSpan="6" className="text-center py-4">
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                    <span>Loading data...</span>
+        <tbody className="overflow-y-auto">
+          {loading ? (
+            <tr>
+              <td colSpan="6" className="text-center py-4">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  <span>Loading data...</span>
+                </div>
+              </td>
+            </tr>
+          ) : metricsData.map((metric, mIndex) => (
+            metric.kpis.map((kpi, kIndex) => (
+              <tr 
+                key={`${mIndex}-${kIndex}`} 
+                className={`border-b border-gray-100 ${
+                  metric.category === 'Client' ? 'bg-blue-50' :
+                  metric.category === 'Financial' ? 'bg-green-50' :
+                  metric.category === 'Internal' ? 'bg-purple-50' :
+                  metric.category === 'People, Learning & Growth' ? 'bg-orange-50' :
+                  'bg-white'
+                }`}
+              >
+                <td className="px-4 py-2 align-top">
+                  <div className="font-medium">{metric.category}</div>
+                  <div className="text-xs text-gray-500 mt-1 pr-2">
+                    {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
+                    {metric.category === 'Client' && "Strategic Objective: Retain Client Business"}
+                    {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
+                    {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
                   </div>
                 </td>
-              </tr>
-            ) : metricsData.map((metric, mIndex) => (
-              metric.kpis.map((kpi, kIndex) => (
-                <tr 
-                  key={`${mIndex}-${kIndex}`} 
-                  className={`border-b border-gray-100 ${
-                    metric.category === 'Client' ? 'bg-blue-50' :
-                    metric.category === 'Financial' ? 'bg-green-50' :
-                    metric.category === 'Internal' ? 'bg-purple-50' :
-                    metric.category === 'People, Learning & Growth' ? 'bg-orange-50' :
-                    'bg-white'
-                  }`}
-                >
-                  <td className="px-4 py-2 align-top">
-                    <div className="font-medium">{metric.category}</div>
+                <td className="px-4 py-2 align-top">
+                  <div className="font-medium">{kpi.name}</div>
+                  {kpi.explanation && (
                     <div className="text-xs text-gray-500 mt-1 pr-2">
-                      {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
-                      {metric.category === 'Client' && "Strategic Objective: Retain Client Business"}
-                      {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
-                      {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
+                      {kpi.explanation}
                     </div>
-                  </td>
-                  <td className="px-4 py-2 align-top">
-                    <div className="font-medium">{kpi.name}</div>
-                    {kpi.explanation && (
-                      <div className="text-xs text-gray-500 mt-1 pr-2">
-                        {kpi.explanation}
-                      </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-2 align-top leading-normal">{kpi.target || '-'}</td>
-                  <td className="px-4 py-2 align-top">
-                    <input
-                      type="text"
-                      value={kpi.actual || ''}
-                      onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
-                      placeholder="..."
-                      className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
-                    />
-                  </td>
-                  <td className="px-4 py-2 align-top">
-                    <select 
-                      value={kpi.status}
-                      onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
-                      className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
-                    >
-                      <option value="">Select a status...</option>
-                      <option value="on-track">✅ On Track</option>
-                      <option value="resolving">⏳ Resolving</option>
-                      <option value="in-progress">🔄 In Progress</option>
-                      <option value="in-training">📚 In Training</option>
-                      <option value="off-track">⚠️ Off Track</option>
-                    </select>
-                  </td>
-                  <td className="px-4 py-2">
-                    <textarea
-                      value={kpi.actions || ''}
-                      onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
-                      placeholder="Enter actions & deadlines..."
-                      className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none resize-none"
-                      style={{
-                        height: '5rem',
-                        overflowY: 'auto'
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))
-            ))}
-          </div>
+                  )}
+                </td>
+                <td className="px-4 py-2 align-top leading-normal">{kpi.target || '-'}</td>
+                <td className="px-4 py-2 align-top">
+                  <input
+                    type="text"
+                    value={kpi.actual || ''}
+                    onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                    placeholder="..."
+                    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
+                  />
+                </td>
+                <td className="px-4 py-2 align-top">
+                  <select 
+                    value={kpi.status}
+                    onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+                    className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+                  >
+                    <option value="">Select a status...</option>
+                    <option value="on-track">✅ On Track</option>
+                    <option value="resolving">⏳ Resolving</option>
+                    <option value="in-progress">🔄 In Progress</option>
+                    <option value="in-training">📚 In Training</option>
+                    <option value="off-track">⚠️ Off Track</option>
+                  </select>
+                </td>
+                <td className="px-4 py-2">
+                  <textarea
+                    value={kpi.actions || ''}
+                    onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
+                    placeholder="Enter actions & deadlines..."
+                    className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none resize-none"
+                    style={{
+                      height: '5rem',
+                      overflowY: 'auto'
+                    }}
+                  />
+                </td>
+              </tr>
+            ))
+          ))}
         </tbody>
       </table>
     </div>
