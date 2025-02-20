@@ -986,13 +986,13 @@ const branches = [
             )}
           </td>
           <td className="px-4 py-2 align-top">{kpi.target || '-'}</td>
-          <td className="px-4 py-2 align-top"> {/* Changed px-1 to px-4 */}
+          <td className="px-4 py-2 align-top">
             <input
               type="text"
               value={kpi.actual || ''}
               onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
               placeholder="..."
-              className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none" 
+              className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none"
             />
           </td>
           <td className="px-4 py-2 align-top">
