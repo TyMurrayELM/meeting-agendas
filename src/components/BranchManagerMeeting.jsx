@@ -290,7 +290,7 @@ const meetingData = {
         {
           name: 'Maintenance Direct Labor Cost (DL%)',
           explanation: 'Monitor and optimize labor cost efficiency',
-          target: '45%',
+          target: '40%',
           actual: '',
           status: '',
           actions: ''
