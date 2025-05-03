@@ -609,6 +609,26 @@ const addNewFinancialKPI = async (branchId, date) => {
 // State for tracking which branch's irrigation data is being viewed
 const [irrigationBranchId, setIrrigationBranchId] = useState('IRR-SE');
 
+// Function to filter irrigation KPIs
+const getIrrigationKPIs = (allMetrics) => {
+  const irrigationKPINames = [
+    'Irrigation Revenue',
+    'Open Opportunities',
+    'Processes & Procedures',
+    'Employee Engagement',
+    'Hiring Needs',
+    'Training & Development'
+  ];
+  
+  // Filter metrics to only include specified KPI names
+  return allMetrics.map(metricCategory => ({
+    ...metricCategory,
+    kpis: metricCategory.kpis.filter(kpi => 
+      irrigationKPINames.includes(kpi.name)
+    )
+  })).filter(category => category.kpis.length > 0); // Remove empty categories
+};
+
 // Add this useEffect
 useEffect(() => {
   console.log('Current tab and date:', { selectedTab, selectedDate });
@@ -777,7 +797,7 @@ const branches = [
       alt="Agave Logo" 
       className="h-8 w-auto"
     />
-    <h1 className="text-xl font-semibold">Branch Manager Meeting Agenda</h1>
+    <h1 className="text-xl font-semibold">Branch Meeting Dashboard</h1>
   </div>
   <div className="flex items-center gap-4">
     <div className="relative min-w-[200px]">
@@ -1068,7 +1088,7 @@ const branches = [
                                 </div>
                               </td>
                             </tr>
-                          ) : metricsData.map((metric, mIndex) => (
+                          ) : getIrrigationKPIs(metricsData).map((metric, mIndex) => (
                             metric.kpis.map((kpi, kIndex) => (
                               <tr 
                                 key={`${mIndex}-${kIndex}`} 
