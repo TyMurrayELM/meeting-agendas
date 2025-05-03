@@ -611,22 +611,36 @@ const [irrigationBranchId, setIrrigationBranchId] = useState('IRR-SE');
 
 // Function to filter irrigation KPIs
 const getIrrigationKPIs = (allMetrics) => {
-  const irrigationKPINames = [
-    'Irrigation Revenue',
-    'Open Opportunities',
-    'Processes & Procedures',
-    'Employee Engagement',
-    'Hiring Needs',
-    'Training & Development'
-  ];
+  // Define specific KPIs for irrigation by category
+  const irrigationKPIs = {
+    'Financial': ['Irrigation Revenue'],
+    'Client': ['Open Opportunities'],
+    'Internal': ['Processes & Procedures'],
+    'People, Learning & Growth': ['Employee Engagement', 'Hiring Needs', 'Training & Development']
+  };
   
-  // Filter metrics to only include specified KPI names
-  return allMetrics.map(metricCategory => ({
-    ...metricCategory,
-    kpis: metricCategory.kpis.filter(kpi => 
-      irrigationKPINames.includes(kpi.name)
-    )
-  })).filter(category => category.kpis.length > 0); // Remove empty categories
+  // Create a new filtered array of metrics
+  const filteredMetrics = [];
+  
+  // Process each category
+  Object.keys(irrigationKPIs).forEach(category => {
+    const categoryMetrics = allMetrics.find(m => m.category === category);
+    if (categoryMetrics) {
+      // Filter KPIs to only include those specified for this category
+      const filteredKPIs = categoryMetrics.kpis.filter(kpi => 
+        irrigationKPIs[category].includes(kpi.name)
+      );
+      
+      if (filteredKPIs.length > 0) {
+        filteredMetrics.push({
+          ...categoryMetrics,
+          kpis: filteredKPIs
+        });
+      }
+    }
+  });
+  
+  return filteredMetrics;
 };
 
 // Add this useEffect
