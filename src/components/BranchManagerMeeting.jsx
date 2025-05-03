@@ -587,7 +587,7 @@ const BranchManagerMeeting = () => {
           },
           {
             name: 'Training & Development',
-            target: 'Punchlist training. Cut back training with Mark and Scott this Thursday.',
+            target: 'Upcoming Training',
             explanation: 'Complete required training of the month',
             actual: '',
             status: '',
@@ -1301,9 +1301,9 @@ const BranchManagerMeeting = () => {
                                   <td className="px-4 py-2 align-top">
                                     <div className="font-medium">{metric.category}</div>
                                     <div className="text-xs text-gray-500 mt-1 pr-2">
-                                      {metric.category === 'Financial' && "Strategic Objective: Increase irrigation revenue"}
-                                      {metric.category === 'Client' && "Strategic Objective: Expand irrigation service offerings"}
-                                      {metric.category === 'Internal' && "Strategic Objective: Standardize irrigation processes"}
+                                      {metric.category === 'Financial' && "Meeting Revenue per Tech Targets"}
+                                      {metric.category === 'Client' && "Linigering Irrigation Jobs or Rennovation Opportunities"}
+                                      {metric.category === 'Internal' && "Utilizing Irrigation Process and Supporting other Departments"}
                                       {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop skilled irrigation technicians"}
                                     </div>
                                   </td>
