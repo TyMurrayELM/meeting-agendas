@@ -14,6 +14,8 @@ import seIcon from '../assets/icons/se.png';
 import nIcon from '../assets/icons/n.png';
 import swIcon from '../assets/icons/sw.png';
 import lvIcon from '../assets/icons/lv.png';
+// Add new irrigation icon import
+import irrIcon from '../assets/icons/irr.png';
 
 
 // Add this constant at the top of your component
@@ -370,6 +372,75 @@ const meetingData = {
           actions: ''
         }
       ]
+    },
+    // Add irrigation-specific KPIs
+    {
+      category: 'Financial',
+      kpis: [
+        {
+          name: 'Irrigation Revenue',
+          explanation: 'Track irrigation service revenue across properties',
+          target: '',
+          actual: '',
+          status: '',
+          actions: ''
+        }
+      ]
+    },
+    {
+      category: 'Client',
+      kpis: [
+        {
+          name: 'Open Opportunities',
+          explanation: 'Track potential irrigation service opportunities',
+          target: '',
+          actual: '',
+          status: '',
+          actions: ''
+        }
+      ]
+    },
+    {
+      category: 'Internal',
+      kpis: [
+        {
+          name: 'Processes & Procedures',
+          explanation: 'Evaluate and improve irrigation workflows',
+          target: '',
+          actual: '',
+          status: '',
+          actions: ''
+        }
+      ]
+    },
+    {
+      category: 'People, Learning & Growth',
+      kpis: [
+        {
+          name: 'Hiring Needs',
+          target: 'Fill critical positions',
+          explanation: 'Identify irrigation team staffing needs',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Training & Development',
+          explanation: 'Complete required training for irrigation team',
+          target: '',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Employee Engagement',
+          explanation: 'Recognize and appreciate employee contributions and achievements',
+          target: '',
+          actual: '',
+          status: '',
+          actions: ''
+        }
+      ]
     }
   ].sort((a, b) => a.category.localeCompare(b.category))
 };
@@ -535,23 +606,29 @@ const addNewFinancialKPI = async (branchId, date) => {
   }
 };
 
+// State for tracking which branch's irrigation data is being viewed
+const [irrigationBranchId, setIrrigationBranchId] = useState('IRR-SE');
+
 // Add this useEffect
 useEffect(() => {
   console.log('Current tab and date:', { selectedTab, selectedDate });
   if (selectedTab !== 'guide') {
+    // Determine which branch ID to use based on if we're in the irrigation tab
+    const branchIdToUse = selectedTab === 'IRR' ? irrigationBranchId : selectedTab;
+    
     // First fetch existing data
-    fetchKPIData(selectedTab, selectedDate)
+    fetchKPIData(branchIdToUse, selectedDate)
       .then(data => {
         console.log('Fetched data:', data);
         setMetricsData(data);
         // Then ensure new KPI exists
-        return addNewFinancialKPI(selectedTab, selectedDate);
+        return addNewFinancialKPI(branchIdToUse, selectedDate);
       })
       .catch(error => {
         console.error('Error fetching data:', error);
       });
   }
-}, [selectedTab, selectedDate]);
+}, [selectedTab, selectedDate, irrigationBranchId]);
 
 useEffect(() => {
   fetchFilesForDate(selectedDate);
@@ -673,12 +750,13 @@ const handleActionsChange = (mIndex, kIndex, newValue) => {
   debouncedSaveActions(newValue, selectedTab, formattedDate, metric.category, kpi.name);
 };
 
-// Then define branches (this got mixed up in your code)
+// Modified branches array to include Irrigation
 const branches = [
   { id: 'SE', name: 'SE Manager', headerColor: 'bg-red-50', icon: seIcon },
   { id: 'N', name: 'N Manager', headerColor: 'bg-green-50', icon: nIcon },
   { id: 'SW', name: 'SW Manager', headerColor: 'bg-blue-50', icon: swIcon },
-  { id: 'LV', name: 'LV Manager', headerColor: 'bg-yellow-50', icon: lvIcon }
+  { id: 'LV', name: 'LV Manager', headerColor: 'bg-yellow-50', icon: lvIcon },
+  { id: 'IRR', name: 'Irrigation', headerColor: 'bg-teal-50', icon: irrIcon }
 ];
 
   const tabOptions = [
@@ -738,7 +816,7 @@ const branches = [
 </div>
 
       <Tabs defaultValue={selectedTab} onValueChange={setSelectedTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-5 gap-1">
+      <TabsList className="grid w-full grid-cols-6 gap-1">
           {tabOptions.map(tab => (
  <TabsTrigger 
  key={tab.id} 
@@ -754,6 +832,8 @@ const branches = [
    ${tab.id === 'SW' && '[&[data-state=active]]:bg-blue-400 [&[data-state=active]]:text-white'}
    ${tab.id === 'LV' && 'bg-yellow-200 hover:bg-yellow-300'}
    ${tab.id === 'LV' && '[&[data-state=active]]:bg-yellow-400 [&[data-state=active]]:text-white'}
+   ${tab.id === 'IRR' && 'bg-teal-200 hover:bg-teal-300'}
+   ${tab.id === 'IRR' && '[&[data-state=active]]:bg-teal-400 [&[data-state=active]]:text-white'}
    ${tab.id === 'guide' && 'bg-blue-200 hover:bg-blue-300'}
    ${tab.id === 'guide' && '[&[data-state=active]]:bg-blue-600 [&[data-state=active]]:text-white'}
  `}
@@ -927,113 +1007,254 @@ const branches = [
 </TabsContent>
 
         {/* Branch Tabs */}
-        {branches.map(branch => (
-          <TabsContent key={branch.id} value={branch.id} className="space-y-4 mt-6">
-<div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
-  <div className="bg-blue-900 p-4">
-    <h2 className="text-lg font-semibold text-white">Strategic Objectives & KPIs</h2>
-  </div>
-  <div className="bg-white p-4">
-    <div className="overflow-x-auto">
-    <table className="w-full border-collapse">
-  <thead>
-    <tr className="border-b border-gray-200">
-      <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
-      <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
-      <th className="px-4 py-2 text-left font-semibold w-32">Target</th> {/* Changed from w-24 to w-32 */}
-      <th className="px-4 py-2 text-left font-semibold w-32">Actual</th> {/* Changed from w-24 to w-32 */}
-      <th className="px-4 py-2 text-left font-semibold w-48">Status</th>
-      <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
-    </tr>
-  </thead>
-  <tbody>
-    {loading ? (
-      <tr>
-        <td colSpan="6" className="text-center py-4">
-          <div className="flex items-center justify-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-            <span>Loading data...</span>
-          </div>
-        </td>
-      </tr>
-    ) : metricsData.map((metric, mIndex) => (
-      metric.kpis.map((kpi, kIndex) => (
-        <tr 
-          key={`${mIndex}-${kIndex}`} 
-          className={`border-b border-gray-100 ${
-            metric.category === 'Client' ? 'bg-blue-50' :
-            metric.category === 'Financial' ? 'bg-green-50' :
-            metric.category === 'Internal' ? 'bg-purple-50' :
-            metric.category === 'People, Learning & Growth' ? 'bg-orange-50' :
-            'bg-white'
-          }`}
-        >
-          <td className="px-4 py-2 align-top">
-            <div className="font-medium">{metric.category}</div>
-            <div className="text-xs text-gray-500 mt-1 pr-2">
-              {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
-              {metric.category === 'Client' && "Strategic Objective: Retain Client Business"}
-              {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
-              {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
-            </div>
-          </td>
-          <td className="px-4 py-2 align-top">
-            <div className="font-medium">{kpi.name}</div>
-            {kpi.explanation && (
-              <div className="text-xs text-gray-500 mt-1 pr-2">
-                {kpi.explanation}
-              </div>
-            )}
-          </td>
-          <td className="px-4 py-2 align-top">
-             <div className="leading-normal align-top">{kpi.target || '-'}</div>
-          </td>
-          <td className="px-4 py-2 align-top">
-  {/* Removed text-xs, changed px-1 py-1 to px-4 py-2 */}
-  <input
-    type="text"
-    value={kpi.actual || ''}
-    onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
-    placeholder="..."
-    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
-  />
-</td>
-          <td className="px-4 py-2 align-top">
-            <select 
-              value={kpi.status}
-              onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
-              className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
-            >
-              <option value="">Select a status...</option>
-              <option value="on-track">✅ On Track</option>
-              <option value="resolving">⏳ Resolving</option>
-              <option value="in-progress">🔄 In Progress</option>
-              <option value="in-training">📚 In Training</option>
-              <option value="off-track">⚠️ Off Track</option>
-            </select>
-          </td>
-          <td className="px-4 py-2">
-            <textarea
-              value={kpi.actions || ''}
-              onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
-              placeholder="Enter actions & deadlines..."
-              className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none resize-none"
-              style={{
-                height: '5rem',
-                overflowY: 'auto'
-              }}
-            />
-          </td>
-        </tr>
-      ))
-    ))}
-  </tbody>
-</table>
+        {branches.map(branch => {
+          // Check if this is the Irrigation tab
+          if (branch.id === 'IRR') {
+            return (
+              <TabsContent key={branch.id} value={branch.id} className="space-y-4 mt-6">
+                <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
+                  <div className="bg-teal-700 p-4">
+                    <h2 className="text-lg font-semibold text-white">Irrigation by Branch</h2>
+                  </div>
+                  <div className="bg-white p-4">
+                    {/* Sub-tabs for branches within Irrigation */}
+                    <div className="mb-6">
+                      <h3 className="text-sm font-medium mb-3">Select Branch:</h3>
+                      <div className="flex space-x-2">
+                        {branches.filter(b => b.id !== 'IRR').map(subBranch => (
+                          <button
+                            key={subBranch.id}
+                            onClick={() => {
+                              // Create a branch-specific ID for irrigation data
+                              const newIrrigationBranchId = `IRR-${subBranch.id}`;
+                              // Update the state to trigger the useEffect
+                              setIrrigationBranchId(newIrrigationBranchId);
+                            }}
+                                                          className={`
+                              flex items-center gap-2 px-4 py-2 rounded-lg border transition-all
+                              ${irrigationBranchId === `IRR-${subBranch.id}` ? 'bg-teal-100 border-teal-400' : 'border-gray-200'}
+                              ${subBranch.id === 'SE' ? 'hover:bg-red-100' : ''}
+                              ${subBranch.id === 'N' ? 'hover:bg-green-100' : ''}
+                              ${subBranch.id === 'SW' ? 'hover:bg-blue-100' : ''}
+                              ${subBranch.id === 'LV' ? 'hover:bg-yellow-100' : ''}
+                            `}
+                          >
+                            <img src={subBranch.icon} alt={subBranch.name} className="w-6 h-6" />
+                            <span>{subBranch.name.replace(' Manager', '')}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
+                            <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
+                            <th className="px-4 py-2 text-left font-semibold w-32">Target</th>
+                            <th className="px-4 py-2 text-left font-semibold w-32">Actual</th>
+                            <th className="px-4 py-2 text-left font-semibold w-48">Status</th>
+                            <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {loading ? (
+                            <tr>
+                              <td colSpan="6" className="text-center py-4">
+                                <div className="flex items-center justify-center space-x-2">
+                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                  <span>Loading data...</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ) : metricsData.map((metric, mIndex) => (
+                            metric.kpis.map((kpi, kIndex) => (
+                              <tr 
+                                key={`${mIndex}-${kIndex}`} 
+                                className={`border-b border-gray-100 ${
+                                  metric.category === 'Client' ? 'bg-blue-50' :
+                                  metric.category === 'Financial' ? 'bg-green-50' :
+                                  metric.category === 'Internal' ? 'bg-purple-50' :
+                                  metric.category === 'People, Learning & Growth' ? 'bg-orange-50' :
+                                  'bg-white'
+                                }`}
+                              >
+                                <td className="px-4 py-2 align-top">
+                                  <div className="font-medium">{metric.category}</div>
+                                  <div className="text-xs text-gray-500 mt-1 pr-2">
+                                    {metric.category === 'Financial' && "Strategic Objective: Increase irrigation revenue"}
+                                    {metric.category === 'Client' && "Strategic Objective: Expand irrigation service offerings"}
+                                    {metric.category === 'Internal' && "Strategic Objective: Standardize irrigation processes"}
+                                    {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop skilled irrigation technicians"}
+                                  </div>
+                                </td>
+                                <td className="px-4 py-2 align-top">
+                                  <div className="font-medium">{kpi.name}</div>
+                                  {kpi.explanation && (
+                                    <div className="text-xs text-gray-500 mt-1 pr-2">
+                                      {kpi.explanation}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-2 align-top">
+                                  <div className="leading-normal align-top">{kpi.target || '-'}</div>
+                                </td>
+                                <td className="px-4 py-2 align-top">
+                                  <input
+                                    type="text"
+                                    value={kpi.actual || ''}
+                                    onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                                    placeholder="..."
+                                    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
+                                  />
+                                </td>
+                                <td className="px-4 py-2 align-top">
+                                  <select 
+                                    value={kpi.status}
+                                    onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+                                    className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+                                  >
+                                    <option value="">Select a status...</option>
+                                    <option value="on-track">✅ On Track</option>
+                                    <option value="resolving">⏳ Resolving</option>
+                                    <option value="in-progress">🔄 In Progress</option>
+                                    <option value="in-training">📚 In Training</option>
+                                    <option value="off-track">⚠️ Off Track</option>
+                                  </select>
+                                </td>
+                                <td className="px-4 py-2">
+                                  <textarea
+                                    value={kpi.actions || ''}
+                                    onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
+                                    placeholder="Enter actions & deadlines..."
+                                    className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none resize-none"
+                                    style={{
+                                      height: '5rem',
+                                      overflowY: 'auto'
+                                    }}
+                                  />
+                                </td>
+                              </tr>
+                            ))
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            );
+          }
+          
+          // For all other non-irrigation tabs
+          return (
+            <TabsContent key={branch.id} value={branch.id} className="space-y-4 mt-6">
+              <div className="rounded-xl overflow-hidden shadow-sm border border-gray-200">
+                <div className="bg-blue-900 p-4">
+                  <h2 className="text-lg font-semibold text-white">Strategic Objectives & KPIs</h2>
+                </div>
+                <div className="bg-white p-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-200">
+                          <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
+                          <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
+                          <th className="px-4 py-2 text-left font-semibold w-32">Target</th>
+                          <th className="px-4 py-2 text-left font-semibold w-32">Actual</th>
+                          <th className="px-4 py-2 text-left font-semibold w-48">Status</th>
+                          <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading ? (
+                          <tr>
+                            <td colSpan="6" className="text-center py-4">
+                              <div className="flex items-center justify-center space-x-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                                <span>Loading data...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : metricsData.map((metric, mIndex) => (
+                          metric.kpis.map((kpi, kIndex) => (
+                            <tr 
+                              key={`${mIndex}-${kIndex}`} 
+                              className={`border-b border-gray-100 ${
+                                metric.category === 'Client' ? 'bg-blue-50' :
+                                metric.category === 'Financial' ? 'bg-green-50' :
+                                metric.category === 'Internal' ? 'bg-purple-50' :
+                                metric.category === 'People, Learning & Growth' ? 'bg-orange-50' :
+                                'bg-white'
+                              }`}
+                            >
+                              <td className="px-4 py-2 align-top">
+                                <div className="font-medium">{metric.category}</div>
+                                <div className="text-xs text-gray-500 mt-1 pr-2">
+                                  {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
+                                  {metric.category === 'Client' && "Strategic Objective: Retain Client Business"}
+                                  {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
+                                  {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 align-top">
+                                <div className="font-medium">{kpi.name}</div>
+                                {kpi.explanation && (
+                                  <div className="text-xs text-gray-500 mt-1 pr-2">
+                                    {kpi.explanation}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-2 align-top">
+                                <div className="leading-normal align-top">{kpi.target || '-'}</div>
+                              </td>
+                              <td className="px-4 py-2 align-top">
+                                <input
+                                  type="text"
+                                  value={kpi.actual || ''}
+                                  onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                                  placeholder="..."
+                                  className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
+                                />
+                              </td>
+                              <td className="px-4 py-2 align-top">
+                                <select 
+                                  value={kpi.status}
+                                  onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+                                  className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+                                >
+                                  <option value="">Select a status...</option>
+                                  <option value="on-track">✅ On Track</option>
+                                  <option value="resolving">⏳ Resolving</option>
+                                  <option value="in-progress">🔄 In Progress</option>
+                                  <option value="in-training">📚 In Training</option>
+                                  <option value="off-track">⚠️ Off Track</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-2">
+                                <textarea
+                                  value={kpi.actions || ''}
+                                  onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
+                                  placeholder="Enter actions & deadlines..."
+                                  className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none resize-none"
+                                  style={{
+                                    height: '5rem',
+                                    overflowY: 'auto'
+                                  }}
+                                />
+                              </td>
+                            </tr>
+                          ))
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          </TabsContent>
-        ))}
+            </TabsContent>
+          );
+        })}
       </Tabs>
     </div>
   </div>
