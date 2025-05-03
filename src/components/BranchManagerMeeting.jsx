@@ -609,60 +609,126 @@ const addNewFinancialKPI = async (branchId, date) => {
 // State for tracking which branch's irrigation data is being viewed
 const [irrigationBranchId, setIrrigationBranchId] = useState('IRR-SE');
 
-// Function to filter irrigation KPIs
-const getIrrigationKPIs = (allMetrics) => {
-  // Define specific KPIs for irrigation by category
-  const irrigationKPIs = {
-    'Financial': ['Irrigation Revenue'],
-    'Client': ['Open Opportunities'],
-    'Internal': ['Processes & Procedures'],
-    'People, Learning & Growth': ['Employee Engagement', 'Hiring Needs', 'Training & Development']
-  };
-  
-  // Create a new filtered array of metrics
-  const filteredMetrics = [];
-  
-  // Process each category
-  Object.keys(irrigationKPIs).forEach(category => {
-    const categoryMetrics = allMetrics.find(m => m.category === category);
-    if (categoryMetrics) {
-      // Filter KPIs to only include those specified for this category
-      const filteredKPIs = categoryMetrics.kpis.filter(kpi => 
-        irrigationKPIs[category].includes(kpi.name)
-      );
-      
-      if (filteredKPIs.length > 0) {
-        filteredMetrics.push({
-          ...categoryMetrics,
-          kpis: filteredKPIs
-        });
-      }
-    }
-  });
-  
-  return filteredMetrics;
-};
+  // Add handler for irrigation data changes
+  const handleIrrigationActualChange = async (mIndex, kIndex, newValue) => {
+    const metric = metricsData[mIndex];
+    const kpi = metric.kpis[kIndex];
 
-// Add this useEffect
+    try {
+      const { error } = await supabase
+        .from('kpi_entries')
+        .upsert({ 
+          meeting_type: MEETING_TYPE,
+          branch_id: irrigationBranchId,
+          meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+          category: metric.category,
+          kpi_name: kpi.name,
+          actual: newValue,
+          status: kpi.status || 'in-progress',
+          actions: kpi.actions || '',
+          target: kpi.target || '',
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      const updatedMetrics = [...metricsData];
+      updatedMetrics[mIndex].kpis[kIndex].actual = newValue;
+      setMetricsData(updatedMetrics);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleIrrigationStatusChange = async (mIndex, kIndex, newValue) => {
+    const metric = metricsData[mIndex];
+    const kpi = metric.kpis[kIndex];
+
+    try {
+      const { error } = await supabase
+        .from('kpi_entries')
+        .upsert({ 
+          meeting_type: MEETING_TYPE,
+          branch_id: irrigationBranchId,
+          meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+          category: metric.category,
+          kpi_name: kpi.name,
+          actual: kpi.actual || '',
+          status: newValue,
+          actions: kpi.actions || '',
+          target: kpi.target || '',
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      const updatedMetrics = [...metricsData];
+      updatedMetrics[mIndex].kpis[kIndex].status = newValue;
+      setMetricsData(updatedMetrics);
+    } catch (err) {
+      console.error('Error updating status:', err);
+    }
+  };
+
+  const handleIrrigationActionsChange = (mIndex, kIndex, newValue) => {
+    const metric = metricsData[mIndex];
+    const kpi = metric.kpis[kIndex];
+
+    // Update UI immediately
+    const updatedMetrics = [...metricsData];
+    updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
+    setMetricsData(updatedMetrics);
+
+    // Debounce the save to database
+    const saveAction = async () => {
+      try {
+        const { error } = await supabase
+          .from('kpi_entries')
+          .upsert({ 
+            meeting_type: MEETING_TYPE,
+            branch_id: irrigationBranchId,
+            meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+            category: metric.category,
+            kpi_name: kpi.name,
+            actual: kpi.actual || '',
+            status: kpi.status || 'in-progress',
+            actions: newValue,
+            target: kpi.target || '',
+            updated_at: new Date().toISOString()
+          });
+
+        if (error) throw error;
+      } catch (err) {
+        console.error('Error saving action:', err);
+      }
+    };
+
+    // Use lodash debounce
+    const debouncedSave = _.debounce(saveAction, 1000);
+    debouncedSave();
+  };
+
 useEffect(() => {
   console.log('Current tab and date:', { selectedTab, selectedDate });
   if (selectedTab !== 'guide') {
-    // Determine which branch ID to use based on if we're in the irrigation tab
-    const branchIdToUse = selectedTab === 'IRR' ? irrigationBranchId : selectedTab;
-    
-    // First fetch existing data
-    fetchKPIData(branchIdToUse, selectedDate)
-      .then(data => {
-        console.log('Fetched data:', data);
-        setMetricsData(data);
-        // Then ensure new KPI exists
-        return addNewFinancialKPI(branchIdToUse, selectedDate);
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-      });
+    if (selectedTab === 'IRR') {
+      // For irrigation tab, use the specialized irrigation KPIs
+      setMetricsData(getIrrigationKPIs());
+    } else {
+      // For regular branch tabs, fetch KPI data as normal
+      fetchKPIData(selectedTab, selectedDate)
+        .then(data => {
+          console.log('Fetched data:', data);
+          setMetricsData(data);
+          // Then ensure new KPI exists
+          return addNewFinancialKPI(selectedTab, selectedDate);
+        })
+        .catch(error => {
+          console.error('Error fetching data:', error);
+        });
+    }
   }
-}, [selectedTab, selectedDate, irrigationBranchId]);
+}, [selectedTab, selectedDate]);
 
 useEffect(() => {
   fetchFilesForDate(selectedDate);
@@ -1102,7 +1168,7 @@ const branches = [
                                 </div>
                               </td>
                             </tr>
-                          ) : getIrrigationKPIs(metricsData).map((metric, mIndex) => (
+                          ) : metricsData.map((metric, mIndex) => (
                             metric.kpis.map((kpi, kIndex) => (
                               <tr 
                                 key={`${mIndex}-${kIndex}`} 
@@ -1138,7 +1204,13 @@ const branches = [
                                   <input
                                     type="text"
                                     value={kpi.actual || ''}
-                                    onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                                    onChange={(e) => {
+                                      if (selectedTab === 'IRR') {
+                                        handleIrrigationActualChange(mIndex, kIndex, e.target.value);
+                                      } else {
+                                        handleActualChange(mIndex, kIndex, e.target.value);
+                                      }
+                                    }}
                                     placeholder="..."
                                     className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
                                   />
@@ -1146,7 +1218,13 @@ const branches = [
                                 <td className="px-4 py-2 align-top">
                                   <select 
                                     value={kpi.status}
-                                    onChange={(e) => handleStatusChange(mIndex, kIndex, e.target.value)}
+                                    onChange={(e) => {
+                                      if (selectedTab === 'IRR') {
+                                        handleIrrigationStatusChange(mIndex, kIndex, e.target.value);
+                                      } else {
+                                        handleStatusChange(mIndex, kIndex, e.target.value);
+                                      }
+                                    }}
                                     className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
                                   >
                                     <option value="">Select a status...</option>
@@ -1160,7 +1238,13 @@ const branches = [
                                 <td className="px-4 py-2">
                                   <textarea
                                     value={kpi.actions || ''}
-                                    onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
+                                    onChange={(e) => {
+                                    if (selectedTab === 'IRR') {
+                                      handleIrrigationActionsChange(mIndex, kIndex, e.target.value);
+                                    } else {
+                                      handleActionsChange(mIndex, kIndex, e.target.value);
+                                    }
+                                  }}
                                     placeholder="Enter actions & deadlines..."
                                     className="w-full px-3 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none resize-none"
                                     style={{
