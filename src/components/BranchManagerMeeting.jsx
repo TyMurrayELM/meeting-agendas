@@ -134,6 +134,15 @@ const BranchManagerMeeting = () => {
       setLoading(true);
       console.log('Fetching irrigation data for:', branchId);
       
+      // Get template with just the irrigation KPIs we want
+      const irrigationTemplate = getIrrigationKPIs();
+      const allowedKPIs = {
+        'Financial': ['Irrigation Revenue'],
+        'Client': ['Open Opportunities'],
+        'Internal': ['Processes & Procedures'],
+        'People, Learning & Growth': ['Hiring Needs', 'Training & Development', 'Employee Engagement']
+      };
+      
       const { data, error } = await supabase
         .from('kpi_entries')
         .select('*')
@@ -143,13 +152,25 @@ const BranchManagerMeeting = () => {
       
       if (error) throw error;
       
-      // If data exists, transform it and update state
       if (data.length > 0) {
+        // Transform data first
         const transformedData = transformKPIData(data);
-        setMetricsData(transformedData);
+        
+        // Then filter to only include our allowed KPIs
+        const filteredData = irrigationTemplate.map(category => {
+          const existingCategory = transformedData.find(c => c.category === category.category);
+          return {
+            ...category,
+            kpis: category.kpis.map(kpi => {
+              const existingKpi = existingCategory?.kpis.find(k => k.name === kpi.name);
+              return existingKpi || kpi;
+            })
+          };
+        });
+        
+        setMetricsData(filteredData);
       } else {
-        // Set default irrigation KPIs if no data exists
-        setMetricsData(getIrrigationKPIs());
+        setMetricsData(irrigationTemplate);
       }
     } catch (err) {
       console.error('Error fetching irrigation data:', err);
