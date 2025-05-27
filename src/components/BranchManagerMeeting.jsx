@@ -1264,10 +1264,10 @@ const BranchManagerMeeting = () => {
                         </div>
                       </div>
                       
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b border-gray-200">
+                      <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                         <table className="w-full border-collapse">
+                             <thead className="sticky top-0 bg-white z-10">
+                             <tr className="border-b border-gray-200">
                               <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
                               <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
                               <th className="px-4 py-2 text-left font-semibold w-32">Target</th>
@@ -1390,11 +1390,10 @@ const BranchManagerMeeting = () => {
                   <div className="bg-blue-900 p-4">
                     <h2 className="text-lg font-semibold text-white">Strategic Objectives & KPIs</h2>
                   </div>
-                  <div className="bg-white p-4">
-                    <div className="overflow-x-auto">
+                  <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                       <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="border-b border-gray-200">
+                         <thead className="sticky top-0 bg-white z-10">
+                           <tr className="border-b border-gray-200">
                             <th className="px-4 py-2 text-left font-semibold w-40">Category</th>
                             <th className="px-4 py-2 text-left font-semibold w-48">KPI</th>
                             <th className="px-4 py-2 text-left font-semibold w-32">Target</th>
