@@ -1457,7 +1457,7 @@ const BranchManagerMeeting = () => {
                                       }
                                     }}
                                     placeholder="..."
-                                    className="w-full px-4 py-2 bg-transparent hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
+                                    className="w-full px-4 py-2 bg-white hover:bg-gray-50 focus:bg-white focus:border focus:rounded-md focus:outline-none align-top leading-normal"
                                   />
                                 </td>
                                 <td className="px-4 py-2 align-top">
