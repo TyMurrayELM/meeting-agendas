@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Card, 
   CardHeader, 
@@ -52,6 +52,7 @@ const BranchManagerMeeting = () => {
   const [irrigationBranchId, setIrrigationBranchId] = useState('IRR-SE');
   
   const agaveLogo = new URL('../assets/logos/agave.png', import.meta.url).href
+  const pendingSavesRef = useRef(null);
 
   // Function to create a fresh set of irrigation KPIs
   const getIrrigationKPIs = () => {
@@ -132,61 +133,75 @@ const BranchManagerMeeting = () => {
   const fetchIrrigationData = async (branchId) => {
     try {
       setLoading(true);
-      console.log('Fetching irrigation data for:', branchId);
+      const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
+      console.log('fetchIrrigationData called:', { branchId, date: formattedDate });
       
-      // Get template with just the irrigation KPIs we want
+      // Cancel any pending saves before fetching
+      if (pendingSavesRef.current) {
+        pendingSavesRef.current.cancel();
+        pendingSavesRef.current.flush(); // Force execute any pending saves
+        await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to ensure saves complete
+      }
+      
       const irrigationTemplate = getIrrigationKPIs();
-      const allowedKPIs = {
-        'Financial': ['Irrigation Revenue'],
-        'Client': ['Open Opportunities'],
-        'Internal': ['Processes & Procedures'],
-        'People, Learning & Growth': ['Hiring Needs', 'Training & Development', 'Employee Engagement']
-      };
       
       const { data, error } = await supabase
         .from('kpi_entries')
         .select('*')
         .eq('meeting_type', MEETING_TYPE)
         .eq('branch_id', branchId)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0]);
+        .eq('meeting_date', formattedDate);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        throw error;
+      }
       
-      if (data.length > 0) {
-        // Transform data first
-        const transformedData = transformKPIData(data);
+      console.log(`Fetched ${data.length} records for ${branchId}`);
+      
+      if (data && data.length > 0) {
+        // Map the data to our template structure
+        const transformedData = irrigationTemplate.map(templateCategory => ({
+          category: templateCategory.category,
+          kpis: templateCategory.kpis.map(templateKpi => {
+            const savedKpi = data.find(
+              d => d.category === templateCategory.category && 
+                   d.kpi_name === templateKpi.name
+            );
+            
+            return {
+              name: templateKpi.name,
+              explanation: templateKpi.explanation,
+              target: savedKpi?.target || templateKpi.target || '',
+              actual: savedKpi?.actual || '',
+              status: savedKpi?.status || '',
+              actions: savedKpi?.actions || ''
+            };
+          })
+        }));
         
-        // Then filter to only include our allowed KPIs
-        const filteredData = irrigationTemplate.map(category => {
-          const existingCategory = transformedData.find(c => c.category === category.category);
-          return {
-            ...category,
-            kpis: category.kpis.map(kpi => {
-              const existingKpi = existingCategory?.kpis.find(k => k.name === kpi.name);
-              return existingKpi || kpi;
-            })
-          };
-        });
-        
-        setMetricsData(filteredData);
+        console.log('Setting transformed data:', transformedData);
+        setMetricsData(transformedData);
       } else {
-        // CREATE INITIAL ENTRIES IF NONE EXIST
-        console.log('No data found, creating initial entries for:', branchId);
+        // No data exists, create initial entries
+        console.log('Creating initial entries for:', branchId);
         
         const initialEntries = irrigationTemplate.flatMap(metric => 
           metric.kpis.map(kpi => ({
             meeting_type: MEETING_TYPE,
             branch_id: branchId,
-            meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+            meeting_date: formattedDate,
             category: metric.category,
             kpi_name: kpi.name,
             target: kpi.target || '',
             actual: '',
-            status: 'in-progress',
+            status: '',
             actions: '',
             updated_at: new Date().toISOString()
           }))
         );
+
+        console.log('Inserting initial entries:', initialEntries);
 
         const { data: newData, error: insertError } = await supabase
           .from('kpi_entries')
@@ -194,16 +209,16 @@ const BranchManagerMeeting = () => {
           .select();
 
         if (insertError) {
-          console.error('Error creating initial entries:', insertError);
+          console.error('Insert error:', insertError);
+          // Still show the template even if insert fails
           setMetricsData(irrigationTemplate);
         } else {
-          // Transform the newly created data
-          const transformedNewData = transformKPIData(newData);
-          setMetricsData(transformedNewData);
+          console.log('Successfully created initial entries');
+          setMetricsData(irrigationTemplate);
         }
       }
     } catch (err) {
-      console.error('Error fetching irrigation data:', err);
+      console.error('Error in fetchIrrigationData:', err);
       setMetricsData(getIrrigationKPIs());
     } finally {
       setLoading(false);
@@ -216,7 +231,7 @@ const BranchManagerMeeting = () => {
     const kpi = metric.kpis[kIndex];
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('kpi_entries')
         .upsert({ 
           meeting_type: MEETING_TYPE,
@@ -229,7 +244,11 @@ const BranchManagerMeeting = () => {
           actions: kpi.actions || '',
           target: kpi.target || '',
           updated_at: new Date().toISOString()
-        });
+        }, {
+          onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -248,7 +267,7 @@ const BranchManagerMeeting = () => {
     const kpi = metric.kpis[kIndex];
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('kpi_entries')
         .upsert({ 
           meeting_type: MEETING_TYPE,
@@ -261,7 +280,11 @@ const BranchManagerMeeting = () => {
           actions: kpi.actions || '',
           target: kpi.target || '',
           updated_at: new Date().toISOString()
-        });
+        }, {
+          onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -279,13 +302,33 @@ const BranchManagerMeeting = () => {
     const kpi = metric.kpis[kIndex];
     const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
 
+    console.log('handleIrrigationActionsChange called:', {
+      mIndex,
+      kIndex,
+      newValue,
+      branchId: irrigationBranchId,
+      kpiName: kpi.name
+    });
+
     // Update UI immediately
     const updatedMetrics = [...metricsData];
     updatedMetrics[mIndex].kpis[kIndex].actions = newValue;
     setMetricsData(updatedMetrics);
 
-    // Use the memoized debounced function
-    debouncedSaveIrrigationActions(newValue, irrigationBranchId, formattedDate, metric.category, kpi.name, kpi);
+    // Cancel any pending save for this field
+    if (pendingSavesRef.current) {
+      pendingSavesRef.current.cancel();
+    }
+
+    // Save to database with debounce
+    debouncedSaveIrrigationActions(
+      newValue, 
+      irrigationBranchId, 
+      formattedDate, 
+      metric.category, 
+      kpi.name, 
+      kpi
+    );
   };
 
   const fetchMeetingMetadata = async (date) => {
@@ -839,29 +882,6 @@ const BranchManagerMeeting = () => {
 
   // Memoized debounced functions
   const debouncedSaveActions = useMemo(
-    () => _.debounce(async (newValue, branchId, date, category, kpiName) => {
-      try {
-        const { error } = await supabase
-          .from('kpi_entries')
-          .update({ 
-            actions: newValue,
-            updated_at: new Date().toISOString()
-          })
-          .eq('meeting_type', MEETING_TYPE)
-          .eq('branch_id', branchId)
-          .eq('meeting_date', date)
-          .eq('category', category)
-          .eq('kpi_name', kpiName);
-
-        if (error) throw error;
-      } catch (err) {
-        console.error('Error saving action:', err);
-      }
-    }, 1000),
-    []
-  );
-
-  const debouncedSaveIrrigationActions = useMemo(
     () => _.debounce(async (newValue, branchId, date, category, kpiName, currentKpi) => {
       try {
         const { error } = await supabase
@@ -872,44 +892,98 @@ const BranchManagerMeeting = () => {
             meeting_date: date,
             category: category,
             kpi_name: kpiName,
+            target: currentKpi.target || '',
             actual: currentKpi.actual || '',
             status: currentKpi.status || 'in-progress',
             actions: newValue,
-            target: currentKpi.target || '',
             updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
           });
 
         if (error) throw error;
-        console.log('Successfully saved irrigation actions');
       } catch (err) {
-        console.error('Error saving irrigation action:', err);
+        console.error('Error saving action:', err);
       }
-    }, 1000),
+    }, 500),
     []
+  );
+
+  const debouncedSaveIrrigationActions = useMemo(
+    () => {
+      const saveFunction = async (newValue, branchId, date, category, kpiName, currentKpi) => {
+        try {
+          console.log('Saving irrigation actions:', {
+            meeting_type: MEETING_TYPE,
+            branch_id: branchId,
+            meeting_date: date,
+            category: category,
+            kpi_name: kpiName,
+            actions: newValue
+          });
+
+          // Upsert will now work correctly with the unique constraint
+          const { data, error } = await supabase
+            .from('kpi_entries')
+            .upsert({
+              meeting_type: MEETING_TYPE,
+              branch_id: branchId,
+              meeting_date: date,
+              category: category,
+              kpi_name: kpiName,
+              target: currentKpi.target || '',
+              actual: currentKpi.actual || '',
+              status: currentKpi.status || 'in-progress',
+              actions: newValue,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Supabase error:', error);
+            throw error;
+          }
+          
+          console.log('Successfully saved irrigation actions:', data);
+        } catch (err) {
+          console.error('Error saving irrigation action:', err);
+        }
+      };
+
+      const debouncedFn = _.debounce(saveFunction, 500);
+      // Store reference for cancellation
+      pendingSavesRef.current = debouncedFn;
+      return debouncedFn;
+    },
+    [] // No dependencies, created once
   );
 
   // Effect hooks
   useEffect(() => {
-    console.log('Current tab and date:', { selectedTab, selectedDate, irrigationBranchId });
-    if (selectedTab !== 'guide') {
-      if (selectedTab === 'IRR') {
-        // For irrigation tab, use the specialized irrigation KPIs
-        // And fetch data for the current selected irrigation branch
-        fetchIrrigationData(irrigationBranchId);
-      } else {
-        // For regular branch tabs, fetch KPI data as normal
-        fetchKPIData(selectedTab, selectedDate)
-          .then(data => {
-            console.log('Fetched data:', data);
-            setMetricsData(data);
-            // Then ensure new KPI exists
-            return addNewFinancialKPI(selectedTab, selectedDate);
-          })
-          .catch(error => {
-            console.error('Error fetching data:', error);
-          });
+    const loadData = async () => {
+      // Wait for any pending saves to complete
+      if (pendingSavesRef.current) {
+        pendingSavesRef.current.flush();
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
-    }
+
+      console.log('useEffect triggered:', { selectedTab, selectedDate, irrigationBranchId });
+      
+      if (selectedTab !== 'guide') {
+        if (selectedTab === 'IRR') {
+          await fetchIrrigationData(irrigationBranchId);
+        } else {
+          const data = await fetchKPIData(selectedTab, selectedDate);
+          setMetricsData(data);
+          await addNewFinancialKPI(selectedTab, selectedDate);
+        }
+      }
+    };
+
+    loadData();
   }, [selectedTab, selectedDate, irrigationBranchId]);
 
   useEffect(() => {
@@ -936,6 +1010,15 @@ const BranchManagerMeeting = () => {
   useEffect(() => {
     fetchMeetingMetadata(selectedDate);
   }, [selectedDate]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup: flush any pending saves when component unmounts
+      if (pendingSavesRef.current) {
+        pendingSavesRef.current.flush();
+      }
+    };
+  }, []);
 
   const handleActualChange = async (mIndex, kIndex, newValue) => {
     const metric = metricsData[mIndex];
@@ -1002,7 +1085,7 @@ const BranchManagerMeeting = () => {
     setMetricsData(updatedMetrics);
 
     // Debounce the save to database
-    debouncedSaveActions(newValue, selectedTab, formattedDate, metric.category, kpi.name);
+    debouncedSaveActions(newValue, selectedTab, formattedDate, metric.category, kpi.name, kpi);
   };
 
   // Modified branches array to include Irrigation
