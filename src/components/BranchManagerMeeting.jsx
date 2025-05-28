@@ -218,6 +218,8 @@ const BranchManagerMeeting = () => {
     switch (status) {
       case 'on-track':
         return <div className="flex items-center gap-2"><Check className="text-green-500" /> On Track</div>;
+      case 'all-good':
+        return <div className="flex items-center gap-2"><Check className="text-green-600" /> All Good</div>;
       case 'resolving':
         return <div className="flex items-center gap-2"><Timer className="text-yellow-500" /> Resolving</div>;
       case 'in-progress':
@@ -1599,6 +1601,7 @@ const BranchManagerMeeting = () => {
                                       className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
                                     >
                                       <option value="">Select a status...</option>
+                                      <option value="all-good">👍 All Good</option>
                                       <option value="on-track">✅ On Track</option>
                                       <option value="resolving">⏳ Resolving</option>
                                       <option value="in-progress">🔄 In Progress</option>
@@ -1723,11 +1726,13 @@ const BranchManagerMeeting = () => {
                                     className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
                                   >
                                     <option value="">Select a status...</option>
+                                    <option value="all-good">👍 All Good</option>
                                     <option value="on-track">✅ On Track</option>
                                     <option value="resolving">⏳ Resolving</option>
                                     <option value="in-progress">🔄 In Progress</option>
                                     <option value="in-training">📚 In Training</option>
                                     <option value="off-track">⚠️ Off Track</option>
+                                    <option value="serious-issue">🚨 Serious Issue</option>
                                   </select>
                                 </td>
                                 <td className="px-4 py-2">
