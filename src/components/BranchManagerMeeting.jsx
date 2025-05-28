@@ -1474,6 +1474,7 @@ const BranchManagerMeeting = () => {
                                     </select>
                                   </td>
                                   <td className="px-4 py-2">
+                                    {/* RESIZABLE TEXTAREA FOR IRRIGATION TAB */}
                                     <textarea
                                       value={kpi.actions || ''}
                                       onChange={(e) => {
@@ -1602,6 +1603,7 @@ const BranchManagerMeeting = () => {
                                   </select>
                                 </td>
                                 <td className="px-4 py-2">
+                                  {/* RESIZABLE TEXTAREA FOR MAIN BRANCH TABS */}
                                   <textarea
                                     value={kpi.actions || ''}
                                     onChange={(e) => {
@@ -1612,9 +1614,10 @@ const BranchManagerMeeting = () => {
                                       }
                                     }}
                                     placeholder="Enter actions & deadlines..."
-                                    className="w-full px-3 py-2 bg-white border border-black hover:bg-gray-50 focus:bg-white focus:border rounded-md focus:outline-none resize-none"
+                                    className="w-full px-3 py-2 bg-white border border-black hover:bg-gray-50 focus:bg-white focus:border rounded-md focus:outline-none resize-y"
                                     style={{
-                                      height: '5rem',
+                                      minHeight: '5rem',
+                                      maxHeight: '20rem',
                                       overflowY: 'auto'
                                     }}
                                   />
