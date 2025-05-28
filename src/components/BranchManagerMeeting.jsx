@@ -20,6 +20,45 @@ import irrIcon from '../assets/icons/irr.png';
 // Meeting type constant
 const MEETING_TYPE = 'bm-meeting';
 
+// Custom hook for auto-resizing textareas
+const useAutoResizeTextarea = (value) => {
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set the height to the scrollHeight (content height)
+      // Math.min ensures it doesn't exceed maxHeight (20rem = 320px)
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 320)}px`;
+    }
+  }, [value]); // Re-calculate when value changes
+
+  return textareaRef;
+};
+
+// Auto-resize textarea component
+const AutoResizeTextarea = ({ value, onChange, placeholder, className, style }) => {
+  const textareaRef = useAutoResizeTextarea(value);
+  
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      className={className}
+      style={{
+        ...style,
+        minHeight: '5rem',
+        maxHeight: '20rem',
+        overflowY: 'auto'
+      }}
+    />
+  );
+};
+
 const BranchManagerMeeting = () => {
   // Function to render status options
   const renderStatusOption = (status) => {
@@ -1475,7 +1514,7 @@ const BranchManagerMeeting = () => {
                                   </td>
                                   <td className="px-4 py-2">
                                     {/* RESIZABLE TEXTAREA FOR IRRIGATION TAB */}
-                                    <textarea
+                                    <AutoResizeTextarea
                                       value={kpi.actions || ''}
                                       onChange={(e) => {
                                         if (selectedTab === 'IRR') {
@@ -1486,11 +1525,6 @@ const BranchManagerMeeting = () => {
                                       }}
                                       placeholder="Enter actions & deadlines..."
                                       className="w-full px-3 py-2 bg-white border border-black hover:bg-gray-50 focus:bg-white focus:border rounded-md focus:outline-none resize-y"
-                                      style={{
-                                        minHeight: '5rem',
-                                        maxHeight: '20rem',
-                                        overflowY: 'auto'
-                                      }}
                                     />
                                   </td>
                                 </tr>
@@ -1604,7 +1638,7 @@ const BranchManagerMeeting = () => {
                                 </td>
                                 <td className="px-4 py-2">
                                   {/* RESIZABLE TEXTAREA FOR MAIN BRANCH TABS */}
-                                  <textarea
+                                  <AutoResizeTextarea
                                     value={kpi.actions || ''}
                                     onChange={(e) => {
                                       if (selectedTab === 'IRR') {
@@ -1615,11 +1649,6 @@ const BranchManagerMeeting = () => {
                                     }}
                                     placeholder="Enter actions & deadlines..."
                                     className="w-full px-3 py-2 bg-white border border-black hover:bg-gray-50 focus:bg-white focus:border rounded-md focus:outline-none resize-y"
-                                    style={{
-                                      minHeight: '5rem',
-                                      maxHeight: '20rem',
-                                      overflowY: 'auto'
-                                    }}
                                   />
                                 </td>
                               </tr>
