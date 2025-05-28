@@ -793,9 +793,17 @@ const BranchManagerMeeting = () => {
         category: 'Internal',
         kpis: [
           {
-            name: 'Maintenance Checklist Adoption',
-            explanation: 'Increase efficiencies, lower cost and improve quality',
-            target: '100% adoption',
+            name: 'Maintenance Visit Note Creation',
+            explanation: 'Visit Notes/Punchlists created for every visit',
+            target: '90%',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Maintenance Checklist Completion',
+            explanation: 'Crews completing punchlist and checklist items in app',
+            target: '80%',
             actual: '',
             status: '',
             actions: ''
