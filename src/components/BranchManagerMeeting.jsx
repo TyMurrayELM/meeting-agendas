@@ -1604,6 +1604,7 @@ const BranchManagerMeeting = () => {
                                       <option value="in-progress">🔄 In Progress</option>
                                       <option value="in-training">📚 In Training</option>
                                       <option value="off-track">⚠️ Off Track</option>
+                                      <option value="serious-issue">🚨 Serious Issue</option>
                                     </select>
                                   </td>
                                   <td className="px-4 py-2">
