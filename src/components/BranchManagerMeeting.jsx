@@ -226,6 +226,8 @@ const BranchManagerMeeting = () => {
         return <div className="flex items-center gap-2"><Timer className="text-purple-500" /> In Training</div>;
       case 'off-track':
         return <div className="flex items-center gap-2"><AlertTriangle className="text-red-500" /> Off Track</div>;
+              case 'serious-issue':
+                return <div className="flex items-center gap-2"><AlertTriangle className="text-red-700 animate-pulse" /> Serious Issue</div>;
       case '':
         return <div className="text-gray-400">Status needed</div>;
       default:
