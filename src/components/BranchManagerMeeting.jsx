@@ -275,6 +275,14 @@ const BranchManagerMeeting = () => {
             actual: '',
             status: '',
             actions: ''
+          },
+          {
+            name: 'Billable Time %',
+            explanation: '% of Time on revenue generating activities',
+            target: '85%',
+            actual: '',
+            status: '',
+            actions: ''
           }
         ]
       },
