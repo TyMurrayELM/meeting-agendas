@@ -1028,6 +1028,14 @@ const BranchManagerMeeting = () => {
             actual: '',
             status: '',
             actions: ''
+          },
+          {
+            name: 'OT %',
+            explanation: 'Overtime percentage',
+            target: '1%',
+            actual: '',
+            status: '',
+            actions: ''
           }
         ]
       },
@@ -1527,7 +1535,7 @@ const BranchManagerMeeting = () => {
                               <th className="px-4 py-2 text-left font-semibold w-32">Target</th>
                               <th className="px-4 py-2 text-left font-semibold w-32">Actual</th>
                               <th className="px-4 py-2 text-left font-semibold w-48">Status</th>
-                              <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
+                              <th className="px-4 py-2 text-left font-semibold">Actions, Deadlines & Explanations</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1624,7 +1632,7 @@ const BranchManagerMeeting = () => {
                                           handleActionsChange(mIndex, kIndex, e.target.value);
                                         }
                                       }}
-                                      placeholder="Enter actions & deadlines..."
+                                      placeholder="Enter actions, deadlines & explanations..."
                                     />
                                   </td>
                                 </tr>
@@ -1656,7 +1664,7 @@ const BranchManagerMeeting = () => {
                             <th className="px-4 py-2 text-left font-semibold w-32">Target</th>
                             <th className="px-4 py-2 text-left font-semibold w-32">Actual</th>
                             <th className="px-4 py-2 text-left font-semibold w-48">Status</th>
-                            <th className="px-4 py-2 text-left font-semibold">Actions & Deadlines</th>
+                            <th className="px-4 py-2 text-left font-semibold">Actions, Deadlines & Explanations</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1753,7 +1761,7 @@ const BranchManagerMeeting = () => {
                                         handleActionsChange(mIndex, kIndex, e.target.value);
                                       }
                                     }}
-                                    placeholder="Enter actions & deadlines..."
+                                    placeholder="Enter actions, deadlines & explanations..."
                                   />
                                 </td>
                               </tr>
