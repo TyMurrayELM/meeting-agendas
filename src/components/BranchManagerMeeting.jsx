@@ -213,6 +213,17 @@ const RichTextActions = ({ value, onChange, placeholder }) => {
 };
 
 const BranchManagerMeeting = () => {
+  // Helper function to check if a KPI should have a status dropdown
+  const shouldShowStatusDropdown = (kpiName) => {
+    const kpisWithoutStatus = [
+      'Cancellations',
+      'Hot Properties',
+      'Management Changes',
+      'New Jobs'
+    ];
+    return !kpisWithoutStatus.includes(kpiName);
+  };
+
   // Function to render status options
   const renderStatusOption = (status) => {
     switch (status) {
@@ -554,97 +565,50 @@ const BranchManagerMeeting = () => {
         setCurrentBooks(data.current_books || []);
         setFacilitator(data.facilitator || '');
       } else {
-        console.log('No existing data, creating new entry');
-        const { data: newData, error: insertError } = await supabase
-          .from('meeting_metadata')
-          .insert({
-            meeting_type: MEETING_TYPE,
-            meeting_date: formattedDate,
-            current_books: meetingData.currentBooks,
-            facilitator: '',
-            updated_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-
-        if (insertError) {
-          console.error('Insert error:', insertError);
-          throw insertError;
-        }
-
-        console.log('Created new metadata:', newData);
-        if (newData) {
-          setCurrentBooks(newData.current_books || []);
-          setFacilitator(newData.facilitator || '');
-        }
+        console.log('No metadata found, using defaults');
+        setCurrentBooks(meetingData.currentBooks);
+        setFacilitator('');
       }
     } catch (err) {
       console.error('Error in fetchMeetingMetadata:', err);
+      setCurrentBooks(meetingData.currentBooks);
+      setFacilitator('');
     }
   };
 
-  const handleFacilitatorChange = async (newValue) => {
+  const saveMeetingMetadata = async (newBooks, newFacilitator) => {
     try {
-      console.log('Updating facilitator with:', {
-        date: selectedDate,
-        facilitator: newValue,
-        books: currentBooks
-      });
-
-      // First check if record exists
-      const { data: existingData, error: fetchError } = await supabase
-        .from('meeting_metadata')
-        .select('*')
-        .eq('meeting_type', MEETING_TYPE)
-        .eq('meeting_date', new Date(selectedDate).toISOString().split('T')[0])
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
-      }
-
+      const formattedDate = new Date(selectedDate).toISOString().split('T')[0];
+      
       const { error } = await supabase
         .from('meeting_metadata')
-        .upsert({
-          id: existingData?.id, // Include if exists
+        .upsert({ 
           meeting_type: MEETING_TYPE,
-          meeting_date: new Date(selectedDate).toISOString().split('T')[0],
-          facilitator: newValue,
-          current_books: currentBooks || [],
-          updated_at: new Date().toISOString()
-        });
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-
-      console.log('Successfully updated facilitator');
-      setFacilitator(newValue);
-    } catch (err) {
-      console.error('Error updating facilitator:', err);
-    }
-  };
-
-  const handleBookChange = async (index, newValue) => {
-    try {
-      const newBooks = [...currentBooks];
-      newBooks[index] = newValue;
-
-      const { error } = await supabase
-        .from('meeting_metadata')
-        .upsert({
-          meeting_type: MEETING_TYPE,
-          meeting_date: new Date(selectedDate).toISOString().split('T')[0],
+          meeting_date: formattedDate,
           current_books: newBooks,
+          facilitator: newFacilitator,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'meeting_type,meeting_date'
         });
 
       if (error) throw error;
-      setCurrentBooks(newBooks);
+      console.log('Successfully saved metadata');
     } catch (err) {
-      console.error('Error updating books:', err);
+      console.error('Error saving metadata:', err);
     }
+  };
+
+  const handleBookChange = (index, newValue) => {
+    const newBooks = [...currentBooks];
+    newBooks[index] = newValue;
+    setCurrentBooks(newBooks);
+    saveMeetingMetadata(newBooks, facilitator);
+  };
+
+  const handleFacilitatorChange = (newValue) => {
+    setFacilitator(newValue);
+    saveMeetingMetadata(currentBooks, newValue);
   };
 
   const handleAddBook = async () => {
@@ -671,7 +635,6 @@ const BranchManagerMeeting = () => {
       console.error('Error adding book:', err);
     }
   };
-
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -715,184 +678,37 @@ const BranchManagerMeeting = () => {
     }
   };
 
-  const meetingData = {
-    mission: "Uplifting & Enriching our people & the properties we maintain",
-    currentBooks: ["Seven habits of highly effective people", "Raving fans"],
-    metrics: [
-      {
-        category: 'Client',
-        kpis: [
-          {
-            name: 'Hot Properties',
-            explanation: 'Identify and address high-risk properties',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Ownership Walks',
-            explanation: 'Review upcoming walks and review actions from prior walks',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Management Changes',
-            explanation: 'Track and work through property management transitions',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Cancellations',
-            explanation: 'Monitor and follow processes for contract cancellations',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'New Jobs',
-            explanation: 'Track new job start-ups and prepare for service start',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          }
-        ]
-      },
-      {
-        category: 'Financial',
-        kpis: [
-          {
-            name: 'Maintenance Direct Labor Cost (DL%)',
-            explanation: 'Monitor and optimize labor cost efficiency',
-            target: '40%',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
-            explanation: 'Monitor and optimize labor cost efficiency',
-            target: '55%',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Client Retention Rate',
-            explanation: 'Retain current maintenance clients. Measured against Jan BOB',
-            target: '90%',
-            actual: '',
-            status: '',
-            actions: ''
-          }
-        ]
-      },
-      {
-        category: 'Internal',
-        kpis: [
-          {
-            name: 'Maintenance Visit Note Creation',
-            explanation: 'Visit Notes/Punchlists created for every visit',
-            target: '90%',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Maintenance Checklist Completion',
-            explanation: 'Crews completing punchlist and checklist items in app',
-            target: '80%',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Fleet Management',
-            explanation: 'Review vehicle and equipment needs or issues',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Safety Compliance',
-            explanation: '',
-            target: '-',
-            actual: '',
-            status: '',
-            actions: ''
-          }
-        ]
-      },
-      {
-        category: 'People, Learning & Growth',
-        kpis: [
-          {
-            name: 'Hiring Needs',
-            target: 'Fill critical positions',
-            explanation: 'Identify any employee needs',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Training & Development',
-            target: 'Upcoming Training',
-            explanation: 'Complete required training of the month',
-            actual: '',
-            status: '',
-            actions: ''
-          },
-          {
-            name: 'Employee Engagement',
-            target: '',
-            explanation: 'Recognize and appreciate employee contributions, achievements, milestones, and/or behaviors that support organizational goals and values',
-            actual: '',
-            status: '',
-            actions: ''
-          }
-        ]
-      }
-    ].sort((a, b) => a.category.localeCompare(b.category))
-  };
-
-  const [metricsData, setMetricsData] = useState(
-    [...meetingData.metrics].sort((a, b) => a.category.localeCompare(b.category))
-  );
+  const [metricsData, setMetricsData] = useState([]);
 
   const generateBiWeeklyTuesdays = () => {
     const dates = [];
-    const startDate = new Date(2025, 1, 18); // Feb 18, 2025
+    const startDate = new Date('2024-12-10'); // Starting point
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1); // One year from now
+
     let currentDate = new Date(startDate);
-  
-    // Generate dates for 2 years from start date
-    const endDate = new Date(startDate);
-    endDate.setFullYear(endDate.getFullYear() + 2);
-  
-    while (currentDate < endDate) {
-      dates.push(currentDate.toLocaleDateString('en-US', { 
-        month: 'numeric', 
-        day: 'numeric', 
-        year: '2-digit'
-      }));
-      currentDate.setDate(currentDate.getDate() + 14);
+    while (currentDate <= endDate) {
+      dates.push(currentDate.toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 14); // Add 14 days (bi-weekly)
     }
+
     return dates;
   };
 
   const findNearestDate = (dates) => {
     const today = new Date();
-    return dates.reduce((nearest, date) => {
-      const current = new Date(date);
-      const nearestDate = new Date(nearest);
-      return Math.abs(current - today) < Math.abs(nearestDate - today) ? date : nearest;
+    let nearest = dates[0];
+    let minDiff = Math.abs(today - new Date(dates[0]));
+
+    dates.forEach(date => {
+      const diff = Math.abs(today - new Date(date));
+      if (diff < minDiff) {
+        minDiff = diff;
+        nearest = date;
+      }
     });
+
+    return nearest;
   };
 
   const dates = generateBiWeeklyTuesdays();
@@ -1120,6 +936,161 @@ const BranchManagerMeeting = () => {
 
     loadData();
   }, [selectedTab, selectedDate, irrigationBranchId]);
+
+  // Clear pending saves when switching tabs
+  useEffect(() => {
+    if (pendingSavesRef.current) {
+      pendingSavesRef.current.cancel();
+      pendingSavesRef.current.flush(); // Force execute any pending saves
+    }
+  }, [selectedTab]);
+
+  const meetingData = {
+    mission: "Uplifting & Enriching our people & the properties we maintain",
+    currentBooks: ["Seven habits of highly effective people", "Raving fans"],
+    metrics: [
+      {
+        category: 'Client',
+        kpis: [
+          {
+            name: 'Hot Properties',
+            explanation: 'Identify and address high-risk properties',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Ownership Walks',
+            explanation: 'Review upcoming walks and review actions from prior walks',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Management Changes',
+            explanation: 'Track and work through property management transitions',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Cancellations',
+            explanation: 'Monitor and follow processes for contract cancellations',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'New Jobs',
+            explanation: 'Track new job start-ups and prepare for service start',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          }
+        ]
+      },
+      {
+        category: 'Financial',
+        kpis: [
+          {
+            name: 'Maintenance Direct Labor Cost (DL%)',
+            explanation: 'Monitor and optimize labor cost efficiency',
+            target: '40%',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Maintenance Direct Labor Cost (DL%) - Onsites',
+            explanation: 'Monitor and optimize labor cost efficiency',
+            target: '55%',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Client Retention Rate',
+            explanation: 'Retain current maintenance clients. Measured against Jan BOB',
+            target: '90%',
+            actual: '',
+            status: '',
+            actions: ''
+          }
+        ]
+      },
+      {
+        category: 'Internal',
+        kpis: [
+          {
+            name: 'Maintenance Visit Note Creation',
+            explanation: 'Visit Notes/Punchlists created for every visit',
+            target: '90%',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Maintenance Checklist Completion',
+            explanation: 'Crews completing punchlist and checklist items in app',
+            target: '80%',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Fleet Management',
+            explanation: 'Review vehicle and equipment needs or issues',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Safety Compliance',
+            explanation: '',
+            target: '-',
+            actual: '',
+            status: '',
+            actions: ''
+          }
+        ]
+      },
+      {
+        category: 'People, Learning & Growth',
+        kpis: [
+          {
+            name: 'Hiring Needs',
+            target: 'Fill critical positions',
+            explanation: 'Identify any employee needs',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Training & Development',
+            target: 'Upcoming Training',
+            explanation: 'Complete required training of the month',
+            actual: '',
+            status: '',
+            actions: ''
+          },
+          {
+            name: 'Employee Engagement',
+            target: '',
+            explanation: 'Recognize and appreciate employee contributions, achievements, milestones, and/or behaviors that support organizational goals and values',
+            actual: '',
+            status: '',
+            actions: ''
+          }
+        ]
+      }
+    ].sort((a, b) => a.category.localeCompare(b.category))
+  };
 
   useEffect(() => {
     fetchFilesForDate(selectedDate);
@@ -1408,6 +1379,26 @@ const BranchManagerMeeting = () => {
                         <span>Check-In</span>
                         <span className="text-sm text-gray-500">5 mins</span>
                       </li>
+                      <li className="flex justify-between items-center">
+                        <span>Mission Statement</span>
+                        <span className="text-sm text-gray-500">2 mins</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <span>Book Discussion</span>
+                        <span className="text-sm text-gray-500">10 mins</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <span>Review KPIs by Category</span>
+                        <span className="text-sm text-gray-500">30 mins</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <span>Action Items & Next Steps</span>
+                        <span className="text-sm text-gray-500">10 mins</span>
+                      </li>
+                      <li className="flex justify-between items-center">
+                        <span>Check-Out</span>
+                        <span className="text-sm text-gray-500">3 mins</span>
+                      </li>
                     </ul>
                   </div>
                 </div>
@@ -1589,26 +1580,30 @@ const BranchManagerMeeting = () => {
                                     />
                                   </td>
                                   <td className="px-4 py-2 align-top">
-                                    <select 
-                                      value={kpi.status}
-                                      onChange={(e) => {
-                                        if (selectedTab === 'IRR') {
-                                          handleIrrigationStatusChange(mIndex, kIndex, e.target.value);
-                                        } else {
-                                          handleStatusChange(mIndex, kIndex, e.target.value);
-                                        }
-                                      }}
-                                      className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
-                                    >
-                                      <option value="">Select a status...</option>
-                                      <option value="all-good">👍 All Good</option>
-                                      <option value="on-track">✅ On Track</option>
-                                      <option value="resolving">⏳ Resolving</option>
-                                      <option value="in-progress">🔄 In Progress</option>
-                                      <option value="in-training">📚 In Training</option>
-                                      <option value="off-track">⚠️ Off Track</option>
-                                      <option value="serious-issue">🚨 Serious Issue</option>
-                                    </select>
+                                    {shouldShowStatusDropdown(kpi.name) ? (
+                                      <select 
+                                        value={kpi.status}
+                                        onChange={(e) => {
+                                          if (selectedTab === 'IRR') {
+                                            handleIrrigationStatusChange(mIndex, kIndex, e.target.value);
+                                          } else {
+                                            handleStatusChange(mIndex, kIndex, e.target.value);
+                                          }
+                                        }}
+                                        className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+                                      >
+                                        <option value="">Select a status...</option>
+                                        <option value="all-good">👍 All Good</option>
+                                        <option value="on-track">✅ On Track</option>
+                                        <option value="resolving">⏳ Resolving</option>
+                                        <option value="in-progress">🔄 In Progress</option>
+                                        <option value="in-training">📚 In Training</option>
+                                        <option value="off-track">⚠️ Off Track</option>
+                                        <option value="serious-issue">🚨 Serious Issue</option>
+                                      </select>
+                                    ) : (
+                                      <div className="text-gray-400 text-center">-</div>
+                                    )}
                                   </td>
                                   <td className="px-4 py-2">
                                     {/* RICH TEXT EDITOR FOR IRRIGATION TAB */}
@@ -1681,10 +1676,10 @@ const BranchManagerMeeting = () => {
                                 <td className="px-4 py-2 align-top">
                                   <div className="font-medium">{metric.category}</div>
                                   <div className="text-xs text-gray-500 mt-1 pr-2">
-                                    {metric.category === 'Financial' && "Strategic Objective: Increase profitability"}
-                                    {metric.category === 'Client' && "Strategic Objective: Retain Client Business"}
-                                    {metric.category === 'Internal' && "Strategic Objective: Build quality into operational processes"}
-                                    {metric.category === 'People, Learning & Growth' && "Strategic Objective: Increase employee retention, Upskill employees and Develop our safety culture"}
+                                    {metric.category === 'Financial' && "Strategic Objective: Meeting or exceeding budget and revenue targets"}
+                                    {metric.category === 'Client' && "Strategic Objective: Providing excellent service and developing trust with our clients"}
+                                    {metric.category === 'Internal' && "Strategic Objective: Optimizing workflow to increase efficiency"}
+                                    {metric.category === 'People, Learning & Growth' && "Strategic Objective: Develop skilled landscape maintenance technicians"}
                                   </div>
                                 </td>
                                 <td className="px-4 py-2 align-top">
@@ -1714,26 +1709,30 @@ const BranchManagerMeeting = () => {
                                   />
                                 </td>
                                 <td className="px-4 py-2 align-top">
-                                  <select 
-                                    value={kpi.status}
-                                    onChange={(e) => {
-                                      if (selectedTab === 'IRR') {
-                                        handleIrrigationStatusChange(mIndex, kIndex, e.target.value);
-                                      } else {
-                                        handleStatusChange(mIndex, kIndex, e.target.value);
-                                      }
-                                    }}
-                                    className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
-                                  >
-                                    <option value="">Select a status...</option>
-                                    <option value="all-good">👍 All Good</option>
-                                    <option value="on-track">✅ On Track</option>
-                                    <option value="resolving">⏳ Resolving</option>
-                                    <option value="in-progress">🔄 In Progress</option>
-                                    <option value="in-training">📚 In Training</option>
-                                    <option value="off-track">⚠️ Off Track</option>
-                                    <option value="serious-issue">🚨 Serious Issue</option>
-                                  </select>
+                                  {shouldShowStatusDropdown(kpi.name) ? (
+                                    <select 
+                                      value={kpi.status}
+                                      onChange={(e) => {
+                                        if (selectedTab === 'IRR') {
+                                          handleIrrigationStatusChange(mIndex, kIndex, e.target.value);
+                                        } else {
+                                          handleStatusChange(mIndex, kIndex, e.target.value);
+                                        }
+                                      }}
+                                      className="flex items-center w-full px-3 py-2 border rounded-md bg-white"
+                                    >
+                                      <option value="">Select a status...</option>
+                                      <option value="all-good">👍 All Good</option>
+                                      <option value="on-track">✅ On Track</option>
+                                      <option value="resolving">⏳ Resolving</option>
+                                      <option value="in-progress">🔄 In Progress</option>
+                                      <option value="in-training">📚 In Training</option>
+                                      <option value="off-track">⚠️ Off Track</option>
+                                      <option value="serious-issue">🚨 Serious Issue</option>
+                                    </select>
+                                  ) : (
+                                    <div className="text-gray-400 text-center">-</div>
+                                  )}
                                 </td>
                                 <td className="px-4 py-2">
                                   {/* RICH TEXT EDITOR FOR MAIN BRANCH TABS */}
