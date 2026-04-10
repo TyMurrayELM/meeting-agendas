@@ -4,7 +4,7 @@ import AuthComponent from './Auth'
 
 const ProtectedRoute = ({ children }) => {
   // For local development only - skip auth
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('Development mode: Authentication bypassed');
     return children;
   }
