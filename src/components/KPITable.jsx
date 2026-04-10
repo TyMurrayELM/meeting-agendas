@@ -24,6 +24,12 @@ const STATUS_CONFIG = {
 };
 
 const CATEGORY_CONFIG = {
+  'Operations': {
+    bg: 'bg-orange-50/60',
+    border: 'border-l-orange-500',
+    badge: 'bg-orange-100 text-orange-700',
+    objective: '',
+  },
   'Financial': {
     bg: 'bg-emerald-50/60',
     border: 'border-l-emerald-500',
@@ -84,12 +90,16 @@ const KPI_BRANCH_LINKS = {
     `https://manage.encorelm.com/crm/properties?search=&branch_name=${BRANCH_PARAM[branchId]}&maintenance_contract=true&new_property=true`,
   'Ownership Walks': (branchId) =>
     `https://manage.encorelm.com/crm/ownership_walks?branch_name=${BRANCH_PARAM[branchId]}&sentiment=all`,
-  'Maintenance Checklist Completion': (branchId) =>
+  'Maintenance Punchlist Completion': (branchId) =>
     `https://manage.encorelm.com/punchlist_reviews?view_type=monthly&branch_name=${BRANCH_PARAM[branchId]}`,
-  'Maintenance Visit Note Creation': (branchId) =>
+  'Maintenance Visit Punchlist Creation': (branchId) =>
     `https://manage.encorelm.com/punchlist_reviews?view_type=monthly&branch_name=${BRANCH_PARAM[branchId]}`,
   'Fleet Management': (branchId) =>
     `https://manage.encorelm.com/service_requests?status%5B%5D=&status%5B%5D=acknowledged&status%5B%5D=in_progress&status%5B%5D=submitted&status%5B%5D=waiting_parts&priority=&issue_category=inspection&branch=${BRANCH_PARAM[branchId]}&assigned_to_id=`,
+  'Urgent Property Service Requests': () =>
+    'https://manage.encorelm.com/property_service_requests?branch=&status%5B%5D=submitted&status%5B%5D=acknowledged&status%5B%5D=scheduled&status%5B%5D=in_progress&status%5B%5D=on_hold&priority=urgent&client_specialist_id=&property_id=&route_id=',
+  'Open Property Service Requests': (branchId) =>
+    `https://manage.encorelm.com/property_service_requests?branch=${BRANCH_PARAM[branchId]}&status%5B%5D=submitted&status%5B%5D=acknowledged&status%5B%5D=scheduled&status%5B%5D=in_progress&status%5B%5D=on_hold&priority=&client_specialist_id=&property_id=&route_id=`,
 };
 
 // KPIs that show a Slack icon instead of an external link

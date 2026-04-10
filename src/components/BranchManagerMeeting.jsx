@@ -34,10 +34,57 @@ const updateKpiField = (metrics, mIndex, kIndex, field, value) =>
         }
   );
 
+const CATEGORY_ORDER = {
+  'Operations': 1,
+  'Client': 2,
+  'Financial': 3,
+  'Internal': 4,
+  'People, Learning & Growth': 5,
+};
+
+const sortByCategory = (a, b) => (CATEGORY_ORDER[a.category] || 999) - (CATEGORY_ORDER[b.category] || 999);
+
 const meetingData = {
   mission: "Uplifting & Enriching our people & the properties we maintain",
   currentBooks: ["Seven habits of highly effective people", "Raving fans"],
   metrics: [
+    {
+      category: 'Operations',
+      kpis: [
+        {
+          name: 'Urgent Property Service Requests',
+          explanation: '',
+          target: '-',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Open Property Service Requests',
+          explanation: '',
+          target: '-',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Maintenance Visit Punchlist Creation',
+          explanation: 'Visit Notes/Punchlists created for every visit',
+          target: '90%',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
+          name: 'Maintenance Punchlist Completion',
+          explanation: 'Crews completing punchlist and checklist items in app',
+          target: '80%',
+          actual: '',
+          status: '',
+          actions: ''
+        }
+      ]
+    },
     {
       category: 'Client',
       kpis: [
@@ -124,22 +171,6 @@ const meetingData = {
       category: 'Internal',
       kpis: [
         {
-          name: 'Maintenance Visit Note Creation',
-          explanation: 'Visit Notes/Punchlists created for every visit',
-          target: '90%',
-          actual: '',
-          status: '',
-          actions: ''
-        },
-        {
-          name: 'Maintenance Checklist Completion',
-          explanation: 'Crews completing punchlist and checklist items in app',
-          target: '80%',
-          actual: '',
-          status: '',
-          actions: ''
-        },
-        {
           name: 'Fleet Management',
           explanation: 'Review vehicle and equipment needs or issues',
           target: '-',
@@ -186,7 +217,7 @@ const meetingData = {
         }
       ]
     }
-  ].sort((a, b) => a.category.localeCompare(b.category))
+  ].sort(sortByCategory)
 };
 
 // Irrigation KPI template
@@ -492,6 +523,33 @@ const BranchManagerMeeting = () => {
         return transformKPIData(newData);
       }
 
+      // Check for any new KPIs that don't exist in the DB yet
+      const existingKeys = new Set(data.map(d => `${d.category}-${d.kpi_name}`));
+      const missingEntries = meetingData.metrics.flatMap(metric =>
+        metric.kpis.filter(kpi => kpi.name && !existingKeys.has(`${metric.category}-${kpi.name}`)).map(kpi => ({
+          meeting_type: MEETING_TYPE,
+          branch_id: branchId,
+          meeting_date: formattedDate,
+          category: metric.category,
+          kpi_name: kpi.name,
+          target: kpi.target,
+          actual: '',
+          status: 'in-progress',
+          actions: '',
+          updated_at: new Date().toISOString()
+        }))
+      );
+
+      if (missingEntries.length > 0) {
+        const { data: newRows, error: insertError } = await supabase
+          .from('kpi_entries')
+          .insert(missingEntries)
+          .select();
+
+        if (insertError) throw insertError;
+        return transformKPIData([...data, ...newRows]);
+      }
+
       return transformKPIData(data);
     } catch (err) {
       setError(err.message);
@@ -502,13 +560,24 @@ const BranchManagerMeeting = () => {
   };
 
   const transformKPIData = (data) => {
+    // Build set of valid KPI names from the template to filter out old/renamed ones
+    const validKpis = new Set();
+    meetingData.metrics.forEach(metric => {
+      metric.kpis.forEach(kpi => {
+        validKpis.add(kpi.name);
+      });
+    });
+
     const groupedData = data.reduce((acc, entry) => {
+      // Skip KPIs that are no longer in the template
+      if (!validKpis.has(entry.kpi_name)) return acc;
+
       if (!acc[entry.category]) {
         acc[entry.category] = { category: entry.category, kpis: [] };
       }
 
       const originalKPI = meetingData.metrics
-        .find(m => m.category === entry.category)
+        .find(m => m.kpis.some(k => k.name === entry.kpi_name))
         ?.kpis.find(k => k.name === entry.kpi_name);
 
       acc[entry.category].kpis.push({
@@ -522,13 +591,23 @@ const BranchManagerMeeting = () => {
       return acc;
     }, {});
 
-    Object.values(groupedData).forEach(group => {
-      group.kpis.sort((a, b) => a.name.localeCompare(b.name));
+    // Preserve the KPI order defined in meetingData rather than sorting alphabetically
+    const kpiOrder = {};
+    meetingData.metrics.forEach(metric => {
+      metric.kpis.forEach((kpi, idx) => {
+        kpiOrder[`${metric.category}-${kpi.name}`] = idx;
+      });
     });
 
-    return Object.values(groupedData).sort((a, b) =>
-      a.category.localeCompare(b.category)
-    );
+    Object.values(groupedData).forEach(group => {
+      group.kpis.sort((a, b) => {
+        const orderA = kpiOrder[`${group.category}-${a.name}`] ?? 999;
+        const orderB = kpiOrder[`${group.category}-${b.name}`] ?? 999;
+        return orderA - orderB;
+      });
+    });
+
+    return Object.values(groupedData).sort(sortByCategory);
   };
 
   const addNewFinancialKPI = async (branchId, date) => {
