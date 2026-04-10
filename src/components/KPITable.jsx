@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Info, CheckCircle2, Check, Clock, RefreshCw, BookOpen, AlertTriangle, AlertOctagon } from 'lucide-react';
+import { Info, CheckCircle2, Check, Clock, RefreshCw, BookOpen, AlertTriangle, AlertOctagon, ExternalLink } from 'lucide-react';
 import RichTextActions from './RichTextActions';
 
 // Reusable info tooltip
@@ -64,13 +64,33 @@ const KPI_TOOLTIPS = {
   'Hiring Needs': 'Identify any employee needs to meet service targets',
 };
 
-// KPIs that should not show a status dropdown
-const KPIS_WITHOUT_STATUS = new Set([
-  'Cancellations',
-  'Hot Properties',
-  'Management Changes',
-  'New Jobs',
+const KPI_LINKS = {
+  'Cancellations': 'https://manage.encorelm.com/crm/properties?maintenance_contract=all&terminated=true',
+  'Hot Properties': 'https://manage.encorelm.com/crm/properties?search=&maintenance_contract=true&stoplight_status=red',
+  'New Jobs': 'https://manage.encorelm.com/crm/properties?maintenance_contract=true&new_property=true',
+  'Ownership Walks': 'https://manage.encorelm.com/crm/ownership_walks',
+  'Fleet Management': 'https://manage.encorelm.com/service_requests',
+  'Maintenance Checklist Completion': 'https://manage.encorelm.com/punchlist_reviews',
+  'Maintenance Visit Note Creation': 'https://manage.encorelm.com/punchlist_reviews',
+};
+
+// KPIs that show a Slack icon instead of an external link
+const SLACK_KPIS = new Set([
+  'Maintenance Direct Labor Cost (DL%)',
+  'Maintenance Direct Labor Cost (DL%) - Onsites',
+  'Client Retention Rate',
+  'OT %',
 ]);
+
+// Slack logo SVG component
+const SlackIcon = ({ className }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zm10.124 2.521a2.528 2.528 0 0 1 2.52-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.52V8.834zm-1.271 0a2.528 2.528 0 0 1-2.521 2.521 2.528 2.528 0 0 1-2.521-2.521V2.522A2.528 2.528 0 0 1 15.166 0a2.528 2.528 0 0 1 2.521 2.522v6.312zm-2.521 10.124a2.528 2.528 0 0 1 2.521 2.52A2.528 2.528 0 0 1 15.166 24a2.528 2.528 0 0 1-2.521-2.522v-2.52h2.52zm0-1.271a2.528 2.528 0 0 1-2.521-2.521 2.528 2.528 0 0 1 2.521-2.521h6.312A2.528 2.528 0 0 1 24 15.166a2.528 2.528 0 0 1-2.522 2.521h-6.312z"/>
+  </svg>
+);
+
+// KPIs that should not show a status dropdown
+const KPIS_WITHOUT_STATUS = new Set([]);
 
 // Compute delta between target and actual
 const computeDelta = (target, actual) => {
@@ -159,6 +179,9 @@ const KPITable = ({
                 const StatusIcon = statusCfg?.icon;
                 const delta = computeDelta(kpi.target, kpi.actual);
                 const showStatus = !KPIS_WITHOUT_STATUS.has(kpi.name);
+                const kpiLink = KPI_LINKS[kpi.name] || null;
+                const isSlackKpi = SLACK_KPIS.has(kpi.name);
+                const hasIcon = kpiLink || isSlackKpi;
 
                 return (
                   <tr
@@ -199,14 +222,32 @@ const KPITable = ({
 
                     {/* Actual */}
                     <td className="px-5 py-3.5 align-top">
-                      <input
-                        type="text"
-                        value={kpi.actual || ''}
-                        onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
-                        placeholder="..."
-                        className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
-                          hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
-                      />
+                      <div className={hasIcon ? 'flex items-start gap-1.5' : ''}>
+                        <input
+                          type="text"
+                          value={kpi.actual || ''}
+                          onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                          placeholder="..."
+                          className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
+                            hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+                        />
+                        {kpiLink && (
+                          <a
+                            href={kpiLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 text-blue-400 hover:text-blue-600 transition-colors flex-shrink-0"
+                            title="Open data source"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        )}
+                        {isSlackKpi && !kpiLink && (
+                          <div className="mt-2 text-[#4A154B] flex-shrink-0" title="Can be found in Slack">
+                            <SlackIcon className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
                     </td>
 
                     {/* Delta */}
