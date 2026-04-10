@@ -21,6 +21,10 @@ const MEETING_TYPE = 'bm-meeting';
 // Format a date value as 'YYYY-MM-DD' for Supabase queries
 const formatDateForDB = (date) => new Date(date).toISOString().split('T')[0];
 
+// KPIs that have stacked quarterly + YTD rows in the DB
+const STACKED_KPI_NAMES = new Set(['Net Maintenance Growth']);
+const ytdName = (name) => `${name} (YTD)`;
+
 // Immutably update a single field on a KPI within the metrics array
 const updateKpiField = (metrics, mIndex, kIndex, field, value) =>
   metrics.map((metric, i) =>
@@ -141,6 +145,16 @@ const meetingData = {
     {
       category: 'Financial',
       kpis: [
+        {
+          name: 'Net Maintenance Growth',
+          explanation: '',
+          target: '4%',
+          actual: '',
+          target_ytd: '16%',
+          actual_ytd: '',
+          status: '',
+          actions: ''
+        },
         {
           name: 'Maintenance Direct Labor Cost (DL%)',
           explanation: 'Monitor and optimize labor cost efficiency',
@@ -516,17 +530,33 @@ const BranchManagerMeeting = () => {
 
       if (data.length === 0) {
         const initialEntries = meetingData.metrics.flatMap(metric =>
-          metric.kpis.map(kpi => ({
-            meeting_type: MEETING_TYPE,
-            branch_id: branchId,
-            meeting_date: formattedDate,
-            category: metric.category,
-            kpi_name: kpi.name,
-            target: kpi.target,
-            actual: '',
-            status: 'in-progress',
-            actions: ''
-          }))
+          metric.kpis.flatMap(kpi => {
+            const entries = [{
+              meeting_type: MEETING_TYPE,
+              branch_id: branchId,
+              meeting_date: formattedDate,
+              category: metric.category,
+              kpi_name: kpi.name,
+              target: kpi.target,
+              actual: '',
+              status: 'in-progress',
+              actions: ''
+            }];
+            if (STACKED_KPI_NAMES.has(kpi.name)) {
+              entries.push({
+                meeting_type: MEETING_TYPE,
+                branch_id: branchId,
+                meeting_date: formattedDate,
+                category: metric.category,
+                kpi_name: ytdName(kpi.name),
+                target: kpi.target_ytd || '',
+                actual: '',
+                status: 'in-progress',
+                actions: ''
+              });
+            }
+            return entries;
+          })
         );
 
         const { data: newData, error: insertError } = await supabase
@@ -542,18 +572,35 @@ const BranchManagerMeeting = () => {
       // Check for any new KPIs that don't exist in the DB yet
       const existingKeys = new Set(data.map(d => `${d.category}-${d.kpi_name}`));
       const missingEntries = meetingData.metrics.flatMap(metric =>
-        metric.kpis.filter(kpi => kpi.name && !existingKeys.has(`${metric.category}-${kpi.name}`)).map(kpi => ({
-          meeting_type: MEETING_TYPE,
-          branch_id: branchId,
-          meeting_date: formattedDate,
-          category: metric.category,
-          kpi_name: kpi.name,
-          target: kpi.target,
-          actual: '',
-          status: 'in-progress',
-          actions: '',
-          updated_at: new Date().toISOString()
-        }))
+        metric.kpis.filter(kpi => kpi.name && !existingKeys.has(`${metric.category}-${kpi.name}`)).flatMap(kpi => {
+          const entries = [{
+            meeting_type: MEETING_TYPE,
+            branch_id: branchId,
+            meeting_date: formattedDate,
+            category: metric.category,
+            kpi_name: kpi.name,
+            target: kpi.target,
+            actual: '',
+            status: 'in-progress',
+            actions: '',
+            updated_at: new Date().toISOString()
+          }];
+          if (STACKED_KPI_NAMES.has(kpi.name) && !existingKeys.has(`${metric.category}-${ytdName(kpi.name)}`)) {
+            entries.push({
+              meeting_type: MEETING_TYPE,
+              branch_id: branchId,
+              meeting_date: formattedDate,
+              category: metric.category,
+              kpi_name: ytdName(kpi.name),
+              target: kpi.target_ytd || '',
+              actual: '',
+              status: 'in-progress',
+              actions: '',
+              updated_at: new Date().toISOString()
+            });
+          }
+          return entries;
+        })
       );
 
       if (missingEntries.length > 0) {
@@ -584,7 +631,22 @@ const BranchManagerMeeting = () => {
       });
     });
 
+    // Build a map of YTD companion rows
+    const ytdMap = {};
+    data.forEach(entry => {
+      for (const baseName of STACKED_KPI_NAMES) {
+        if (entry.kpi_name === ytdName(baseName)) {
+          ytdMap[baseName] = entry;
+        }
+      }
+    });
+
     const groupedData = data.reduce((acc, entry) => {
+      // Skip YTD companion rows (they get merged into the main row)
+      for (const baseName of STACKED_KPI_NAMES) {
+        if (entry.kpi_name === ytdName(baseName)) return acc;
+      }
+
       // Skip KPIs that are no longer in the template
       if (!validKpis.has(entry.kpi_name)) return acc;
 
@@ -598,14 +660,22 @@ const BranchManagerMeeting = () => {
         acc[correctCategory] = { category: correctCategory, kpis: [] };
       }
 
-      acc[correctCategory].kpis.push({
+      const kpiData = {
         name: entry.kpi_name,
-        target: entry.target,
+        target: entry.target || originalKPI?.target || '',
         actual: entry.actual,
         status: entry.status,
         actions: entry.actions,
         explanation: originalKPI?.explanation || ''
-      });
+      };
+
+      // Merge YTD data for stacked KPIs
+      if (STACKED_KPI_NAMES.has(entry.kpi_name)) {
+        kpiData.target_ytd = ytdMap[entry.kpi_name]?.target || originalKPI?.target_ytd || '';
+        kpiData.actual_ytd = ytdMap[entry.kpi_name]?.actual || '';
+      }
+
+      acc[correctCategory].kpis.push(kpiData);
       return acc;
     }, {});
 
@@ -832,6 +902,68 @@ const BranchManagerMeeting = () => {
       }
     } catch (err) {
       console.error('Error updating target:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleTargetYtdChange = async (mIndex, kIndex, newValue) => {
+    const metric = metricsData[mIndex];
+    const kpi = metric.kpis[kIndex];
+
+    setMetricsData(prev => updateKpiField(prev, mIndex, kIndex, 'target_ytd', newValue));
+
+    try {
+      const { error } = await supabase
+        .from('kpi_entries')
+        .upsert({
+          meeting_type: MEETING_TYPE,
+          branch_id: selectedTab === 'IRR' ? irrigationBranchId : selectedTab,
+          meeting_date: formatDateForDB(selectedDate),
+          category: metric.category,
+          kpi_name: ytdName(kpi.name),
+          target: newValue,
+          actual: kpi.actual_ytd || '',
+          status: kpi.status || 'in-progress',
+          actions: '',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
+        });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error updating YTD target:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleActualYtdChange = async (mIndex, kIndex, newValue) => {
+    const metric = metricsData[mIndex];
+    const kpi = metric.kpis[kIndex];
+
+    setMetricsData(prev => updateKpiField(prev, mIndex, kIndex, 'actual_ytd', newValue));
+
+    try {
+      const { error } = await supabase
+        .from('kpi_entries')
+        .upsert({
+          meeting_type: MEETING_TYPE,
+          branch_id: selectedTab === 'IRR' ? irrigationBranchId : selectedTab,
+          meeting_date: formatDateForDB(selectedDate),
+          category: metric.category,
+          kpi_name: ytdName(kpi.name),
+          target: kpi.target_ytd || '',
+          actual: newValue,
+          status: kpi.status || 'in-progress',
+          actions: '',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
+        });
+
+      if (error) throw error;
+    } catch (err) {
+      console.error('Error updating YTD actual:', err);
       setError(err.message);
     }
   };
@@ -1123,6 +1255,8 @@ const BranchManagerMeeting = () => {
                     metricsData={metricsData}
                     handleActualChange={handleActualChange}
                     handleTargetChange={handleTargetChange}
+                    handleTargetYtdChange={handleTargetYtdChange}
+                    handleActualYtdChange={handleActualYtdChange}
                     handleStatusChange={handleStatusChange}
                     handleActionsChange={handleActionsChange}
                     headerTitle="Irrigation KPIs"
@@ -1140,6 +1274,8 @@ const BranchManagerMeeting = () => {
                   metricsData={metricsData}
                   handleActualChange={handleActualChange}
                   handleTargetChange={handleTargetChange}
+                  handleTargetYtdChange={handleTargetYtdChange}
+                  handleActualYtdChange={handleActualYtdChange}
                   handleStatusChange={handleStatusChange}
                   handleActionsChange={handleActionsChange}
                   branchId={branch.id}

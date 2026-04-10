@@ -127,6 +127,11 @@ const SlackIcon = ({ className }) => (
 // KPIs that should not show a status dropdown
 const KPIS_WITHOUT_STATUS = new Set([]);
 
+// KPIs with stacked quarterly + YTD inputs
+const STACKED_KPIS = new Set([
+  'Net Maintenance Growth',
+]);
+
 // KPIs with editable target input (instead of static text)
 const KPIS_WITH_EDITABLE_TARGET = new Set([
   'Headcount',
@@ -207,6 +212,8 @@ const KPITable = ({
   metricsData,
   handleActualChange,
   handleTargetChange,
+  handleTargetYtdChange,
+  handleActualYtdChange,
   handleStatusChange,
   handleActionsChange,
   headerTitle = 'Strategic Objectives & KPIs',
@@ -303,7 +310,18 @@ const KPITable = ({
 
                     {/* Target */}
                     <td className="px-5 py-3.5 align-top">
-                      {KPIS_WITH_EDITABLE_TARGET.has(kpi.name) ? (
+                      {STACKED_KPIS.has(kpi.name) ? (
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-[10px] font-semibold text-gray-500 uppercase">Quarterly</label>
+                            <span className="block text-sm font-medium text-black text-center">{kpi.target || '-'}</span>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-semibold text-gray-500 uppercase">Annual</label>
+                            <span className="block text-sm font-medium text-black text-center">{kpi.target_ytd || '-'}</span>
+                          </div>
+                        </div>
+                      ) : KPIS_WITH_EDITABLE_TARGET.has(kpi.name) ? (
                         <input
                           type="text"
                           value={kpi.target || ''}
@@ -324,6 +342,32 @@ const KPITable = ({
                     {/* Actual */}
                     <td className="px-5 py-3.5 align-top">
                       <div className={hasIcon ? 'flex items-start gap-1.5' : ''}>
+                        {STACKED_KPIS.has(kpi.name) ? (
+                          <div className="w-full space-y-2">
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Quarterly</label>
+                              <input
+                                type="text"
+                                value={kpi.actual || ''}
+                                onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                                placeholder="..."
+                                className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
+                                  hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Annual</label>
+                              <input
+                                type="text"
+                                value={kpi.actual_ytd || ''}
+                                onChange={(e) => handleActualYtdChange(mIndex, kIndex, e.target.value)}
+                                placeholder="..."
+                                className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
+                                  hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+                              />
+                            </div>
+                          </div>
+                        ) : (
                         <input
                           type="text"
                           value={kpi.actual || ''}
@@ -336,6 +380,7 @@ const KPITable = ({
                           className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
                             hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
                         />
+                        )}
                         {kpiLink && (
                           <a
                             href={kpiLink}
@@ -357,7 +402,34 @@ const KPITable = ({
 
                     {/* Delta */}
                     <td className="px-5 py-3.5 align-top text-center">
-                      {delta ? (
+                      {STACKED_KPIS.has(kpi.name) ? (() => {
+                        const deltaQ = computeDelta(kpi.target, kpi.actual, kpi.name);
+                        const deltaYtd = computeDelta(kpi.target_ytd, kpi.actual_ytd, kpi.name);
+                        return (
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Quarterly</label>
+                              {deltaQ ? (
+                                <span className={`block px-2 py-1 rounded-full text-xs font-semibold ${
+                                  deltaQ.value > 0 ? 'bg-green-100 text-green-700' :
+                                  deltaQ.value < 0 ? 'bg-red-100 text-red-700' :
+                                  'bg-gray-100 text-black'
+                                }`}>{deltaQ.formatted}</span>
+                              ) : <span className="text-xs text-black">-</span>}
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Annual</label>
+                              {deltaYtd ? (
+                                <span className={`block px-2 py-1 rounded-full text-xs font-semibold ${
+                                  deltaYtd.value > 0 ? 'bg-green-100 text-green-700' :
+                                  deltaYtd.value < 0 ? 'bg-red-100 text-red-700' :
+                                  'bg-gray-100 text-black'
+                                }`}>{deltaYtd.formatted}</span>
+                              ) : <span className="text-xs text-black">-</span>}
+                            </div>
+                          </div>
+                        );
+                      })() : delta ? (
                         <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
                           delta.value > 0 ? 'bg-green-100 text-green-700' :
                           delta.value < 0 ? 'bg-red-100 text-red-700' :
