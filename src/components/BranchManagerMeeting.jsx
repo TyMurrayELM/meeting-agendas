@@ -995,6 +995,7 @@ const BranchManagerMeeting = () => {
                   handleActualChange={handleActualChange}
                   handleStatusChange={handleStatusChange}
                   handleActionsChange={handleActionsChange}
+                  branchId={branch.id}
                 />
               </TabsContent>
             );

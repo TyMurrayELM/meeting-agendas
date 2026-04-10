@@ -64,14 +64,32 @@ const KPI_TOOLTIPS = {
   'Hiring Needs': 'Identify any employee needs to meet service targets',
 };
 
-const KPI_LINKS = {
-  'Cancellations': 'https://manage.encorelm.com/crm/properties?maintenance_contract=all&terminated=true',
-  'Hot Properties': 'https://manage.encorelm.com/crm/properties?search=&maintenance_contract=true&stoplight_status=red',
-  'New Jobs': 'https://manage.encorelm.com/crm/properties?maintenance_contract=true&new_property=true',
-  'Ownership Walks': 'https://manage.encorelm.com/crm/ownership_walks',
-  'Fleet Management': 'https://manage.encorelm.com/service_requests',
-  'Maintenance Checklist Completion': 'https://manage.encorelm.com/punchlist_reviews',
-  'Maintenance Visit Note Creation': 'https://manage.encorelm.com/punchlist_reviews',
+// Static links (same URL regardless of branch)
+const KPI_LINKS = {};
+
+// Branch-specific links (different URL per branch tab)
+const BRANCH_PARAM = {
+  'SE': 'Phx+-+SouthEast',
+  'N': 'Phx+-+North',
+  'SW': 'Phx+-+SouthWest',
+  'LV': 'Las+Vegas',
+};
+
+const KPI_BRANCH_LINKS = {
+  'Cancellations': (branchId) =>
+    `https://manage.encorelm.com/crm/properties?search=&branch_name=${BRANCH_PARAM[branchId]}&maintenance_contract=all&terminated=true`,
+  'Hot Properties': (branchId) =>
+    `https://manage.encorelm.com/crm/properties?search=&branch_name=${BRANCH_PARAM[branchId]}&maintenance_contract=true&stoplight_status=red`,
+  'New Jobs': (branchId) =>
+    `https://manage.encorelm.com/crm/properties?search=&branch_name=${BRANCH_PARAM[branchId]}&maintenance_contract=true&new_property=true`,
+  'Ownership Walks': (branchId) =>
+    `https://manage.encorelm.com/crm/ownership_walks?branch_name=${BRANCH_PARAM[branchId]}&sentiment=all`,
+  'Maintenance Checklist Completion': (branchId) =>
+    `https://manage.encorelm.com/punchlist_reviews?view_type=monthly&branch_name=${BRANCH_PARAM[branchId]}`,
+  'Maintenance Visit Note Creation': (branchId) =>
+    `https://manage.encorelm.com/punchlist_reviews?view_type=monthly&branch_name=${BRANCH_PARAM[branchId]}`,
+  'Fleet Management': (branchId) =>
+    `https://manage.encorelm.com/service_requests?status%5B%5D=&status%5B%5D=acknowledged&status%5B%5D=in_progress&status%5B%5D=submitted&status%5B%5D=waiting_parts&priority=&issue_category=inspection&branch=${BRANCH_PARAM[branchId]}&assigned_to_id=`,
 };
 
 // KPIs that show a Slack icon instead of an external link
@@ -127,6 +145,7 @@ const KPITable = ({
   handleActionsChange,
   headerTitle = 'Strategic Objectives & KPIs',
   isIrrigation = false,
+  branchId = null,
 }) => {
   return (
     <div className="rounded-2xl overflow-hidden shadow-md border border-gray-200/80 bg-white">
@@ -179,7 +198,8 @@ const KPITable = ({
                 const StatusIcon = statusCfg?.icon;
                 const delta = computeDelta(kpi.target, kpi.actual);
                 const showStatus = !KPIS_WITHOUT_STATUS.has(kpi.name);
-                const kpiLink = KPI_LINKS[kpi.name] || null;
+                const branchLinkFn = KPI_BRANCH_LINKS[kpi.name];
+                const kpiLink = (branchLinkFn && branchId ? branchLinkFn(branchId) : null) || KPI_LINKS[kpi.name] || null;
                 const isSlackKpi = SLACK_KPIS.has(kpi.name);
                 const hasIcon = kpiLink || isSlackKpi;
 
