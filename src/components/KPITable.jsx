@@ -71,7 +71,12 @@ const KPI_TOOLTIPS = {
 };
 
 // Static links (same URL regardless of branch)
-const KPI_LINKS = {};
+const KPI_LINKS = {
+  'Headcount': 'https://direct-labor-calculator.vercel.app/forecast',
+  'Billable Time %': 'https://direct-labor-calculator.vercel.app/forecast/irrigation',
+  'Irrigation Revenue': 'https://lookerstudio.google.com/u/0/reporting/2a7279f7-4e0a-4a51-a24a-1fe66fa70ae3/page/p_8id7wsettc?params=%7B%22df368%22:%22include%25EE%2580%25800%25EE%2580%2580IN%25EE%2580%2580Irrig%22%7D',
+  'Required FTEs': 'https://direct-labor-calculator.vercel.app/forecast/irrigation',
+};
 
 // Branch-specific links (different URL per branch tab)
 const BRANCH_PARAM = {
@@ -100,6 +105,8 @@ const KPI_BRANCH_LINKS = {
     'https://manage.encorelm.com/property_service_requests?branch=&status%5B%5D=submitted&status%5B%5D=acknowledged&status%5B%5D=scheduled&status%5B%5D=in_progress&status%5B%5D=on_hold&priority=urgent&client_specialist_id=&property_id=&route_id=',
   'Open Property Service Requests': (branchId) =>
     `https://manage.encorelm.com/property_service_requests?branch=${BRANCH_PARAM[branchId]}&status%5B%5D=submitted&status%5B%5D=acknowledged&status%5B%5D=scheduled&status%5B%5D=in_progress&status%5B%5D=on_hold&priority=&client_specialist_id=&property_id=&route_id=`,
+  'Open Opportunities': (branchId) =>
+    `https://manage.encorelm.com/crm/opportunities?branch_name=${BRANCH_PARAM[branchId]}&division_name=Irrigation&opportunity_status_name=Won&job_status_name=In+Production`,
 };
 
 // KPIs that show a Slack icon instead of an external link
@@ -120,8 +127,53 @@ const SlackIcon = ({ className }) => (
 // KPIs that should not show a status dropdown
 const KPIS_WITHOUT_STATUS = new Set([]);
 
+// KPIs with editable target input (instead of static text)
+const KPIS_WITH_EDITABLE_TARGET = new Set([
+  'Headcount',
+  'Required FTEs',
+  'Irrigation Revenue',
+]);
+
+// KPIs with dollar formatting (no decimals)
+const KPIS_WITH_DOLLAR_FORMAT = new Set([
+  'Irrigation Revenue',
+]);
+
+// KPIs that show projected revenue based on run rate
+const KPIS_WITH_PROJECTION = new Set([
+  'Irrigation Revenue',
+]);
+
+const getMonthProgress = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const currentDay = now.getDate();
+  return currentDay / daysInMonth;
+};
+
+const computeProjection = (actual) => {
+  if (!actual) return null;
+  const parsed = parseFloat(String(actual).replace(/[$,%\s,]/g, ''));
+  if (isNaN(parsed)) return null;
+  const progress = getMonthProgress();
+  if (progress === 0) return null;
+  const projected = Math.round(parsed / progress);
+  return {
+    projected: `$${projected.toLocaleString('en-US')}`,
+    progress: Math.round(progress * 100),
+  };
+};
+
+const formatDollar = (val) => {
+  const num = parseFloat(String(val).replace(/[$,%\s,]/g, ''));
+  if (isNaN(num)) return val;
+  return `$${Math.round(num).toLocaleString('en-US')}`;
+};
+
 // Compute delta between target and actual
-const computeDelta = (target, actual) => {
+const computeDelta = (target, actual, kpiName) => {
   if (!target || !actual) return null;
 
   const parse = (val) => {
@@ -136,10 +188,13 @@ const computeDelta = (target, actual) => {
 
   const diff = a - t;
   const isPercent = String(target).includes('%') || String(actual).includes('%');
+  const isDollar = KPIS_WITH_DOLLAR_FORMAT.has(kpiName);
 
   let formatted;
   if (isPercent) {
     formatted = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}%`;
+  } else if (isDollar) {
+    formatted = `${diff >= 0 ? '+' : ''}$${Math.abs(Math.round(diff)).toLocaleString('en-US')}`;
   } else {
     formatted = `${diff >= 0 ? '+' : ''}${diff % 1 === 0 ? diff : diff.toFixed(1)}`;
   }
@@ -151,6 +206,7 @@ const KPITable = ({
   loading,
   metricsData,
   handleActualChange,
+  handleTargetChange,
   handleStatusChange,
   handleActionsChange,
   headerTitle = 'Strategic Objectives & KPIs',
@@ -206,7 +262,7 @@ const KPITable = ({
               return metric.kpis.map((kpi, kIndex) => {
                 const statusCfg = STATUS_CONFIG[kpi.status];
                 const StatusIcon = statusCfg?.icon;
-                const delta = computeDelta(kpi.target, kpi.actual);
+                const delta = computeDelta(kpi.target, kpi.actual, kpi.name);
                 const showStatus = !KPIS_WITHOUT_STATUS.has(kpi.name);
                 const branchLinkFn = KPI_BRANCH_LINKS[kpi.name];
                 const kpiLink = (branchLinkFn && branchId ? branchLinkFn(branchId) : null) || KPI_LINKS[kpi.name] || null;
@@ -247,7 +303,22 @@ const KPITable = ({
 
                     {/* Target */}
                     <td className="px-5 py-3.5 align-top">
-                      <span className="text-sm font-medium text-black">{kpi.target || '-'}</span>
+                      {KPIS_WITH_EDITABLE_TARGET.has(kpi.name) ? (
+                        <input
+                          type="text"
+                          value={kpi.target || ''}
+                          onChange={(e) => handleTargetChange(mIndex, kIndex, e.target.value)}
+                          onBlur={KPIS_WITH_DOLLAR_FORMAT.has(kpi.name) ? (e) => {
+                            const formatted = formatDollar(e.target.value);
+                            if (formatted !== e.target.value) handleTargetChange(mIndex, kIndex, formatted);
+                          } : undefined}
+                          placeholder="..."
+                          className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
+                            hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
+                        />
+                      ) : (
+                        <span className="text-sm font-medium text-black">{kpi.target || '-'}</span>
+                      )}
                     </td>
 
                     {/* Actual */}
@@ -257,6 +328,10 @@ const KPITable = ({
                           type="text"
                           value={kpi.actual || ''}
                           onChange={(e) => handleActualChange(mIndex, kIndex, e.target.value)}
+                          onBlur={KPIS_WITH_DOLLAR_FORMAT.has(kpi.name) ? (e) => {
+                            const formatted = formatDollar(e.target.value);
+                            if (formatted !== e.target.value) handleActualChange(mIndex, kIndex, formatted);
+                          } : undefined}
                           placeholder="..."
                           className="w-full px-2 py-1.5 bg-white border border-black rounded-lg text-sm text-center
                             hover:border-black focus:border-blue-400 focus:ring-2 focus:ring-blue-100 focus:outline-none transition-all"
@@ -293,6 +368,15 @@ const KPITable = ({
                       ) : (
                         <span className="text-xs text-black">-</span>
                       )}
+                      {KPIS_WITH_PROJECTION.has(kpi.name) && (() => {
+                        const proj = computeProjection(kpi.actual);
+                        if (!proj) return null;
+                        return (
+                          <div className="mt-1.5 text-[10px] text-gray-500 leading-tight">
+                            <div>Projected: <span className="font-semibold text-black">{proj.projected}</span></div>
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* Status */}

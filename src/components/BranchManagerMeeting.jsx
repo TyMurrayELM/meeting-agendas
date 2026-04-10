@@ -68,6 +68,14 @@ const meetingData = {
           actions: ''
         },
         {
+          name: 'Headcount',
+          explanation: '',
+          target: '',
+          actual: '',
+          status: '',
+          actions: ''
+        },
+        {
           name: 'Maintenance Visit Punchlist Creation',
           explanation: 'Visit Notes/Punchlists created for every visit',
           target: '90%',
@@ -237,6 +245,14 @@ const getIrrigationKPIs = () => [
         name: 'Billable Time %',
         explanation: '% of Time on revenue generating activities',
         target: '85%',
+        actual: '',
+        status: '',
+        actions: ''
+      },
+      {
+        name: 'Required FTEs',
+        explanation: '',
+        target: '',
         actual: '',
         status: '',
         actions: ''
@@ -572,15 +588,17 @@ const BranchManagerMeeting = () => {
       // Skip KPIs that are no longer in the template
       if (!validKpis.has(entry.kpi_name)) return acc;
 
-      if (!acc[entry.category]) {
-        acc[entry.category] = { category: entry.category, kpis: [] };
+      const originalMetric = meetingData.metrics
+        .find(m => m.kpis.some(k => k.name === entry.kpi_name));
+      const originalKPI = originalMetric?.kpis.find(k => k.name === entry.kpi_name);
+
+      // Use the template category (not DB category) to fix any typos like "Operation" vs "Operations"
+      const correctCategory = originalMetric?.category || entry.category;
+      if (!acc[correctCategory]) {
+        acc[correctCategory] = { category: correctCategory, kpis: [] };
       }
 
-      const originalKPI = meetingData.metrics
-        .find(m => m.kpis.some(k => k.name === entry.kpi_name))
-        ?.kpis.find(k => k.name === entry.kpi_name);
-
-      acc[entry.category].kpis.push({
+      acc[correctCategory].kpis.push({
         name: entry.kpi_name,
         target: entry.target,
         actual: entry.actual,
@@ -767,6 +785,53 @@ const BranchManagerMeeting = () => {
       }
     } catch (err) {
       console.error('Error updating actual:', err);
+      setError(err.message);
+    }
+  };
+
+  const handleTargetChange = async (mIndex, kIndex, newValue) => {
+    const metric = metricsData[mIndex];
+    const kpi = metric.kpis[kIndex];
+
+    setMetricsData(prev => updateKpiField(prev, mIndex, kIndex, 'target', newValue));
+
+    try {
+      if (selectedTab === 'IRR') {
+        const { error } = await supabase
+          .from('kpi_entries')
+          .upsert({
+            meeting_type: MEETING_TYPE,
+            branch_id: irrigationBranchId,
+            meeting_date: formatDateForDB(selectedDate),
+            category: metric.category,
+            kpi_name: kpi.name,
+            actual: kpi.actual || '',
+            status: kpi.status || 'in-progress',
+            actions: kpi.actions || '',
+            target: newValue,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'meeting_type,branch_id,meeting_date,category,kpi_name'
+          });
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('kpi_entries')
+          .update({
+            target: newValue,
+            updated_at: new Date().toISOString()
+          })
+          .eq('meeting_type', MEETING_TYPE)
+          .eq('branch_id', selectedTab)
+          .eq('meeting_date', formatDateForDB(selectedDate))
+          .eq('category', metric.category)
+          .eq('kpi_name', kpi.name);
+
+        if (error) throw error;
+      }
+    } catch (err) {
+      console.error('Error updating target:', err);
       setError(err.message);
     }
   };
@@ -1057,10 +1122,12 @@ const BranchManagerMeeting = () => {
                     loading={loading}
                     metricsData={metricsData}
                     handleActualChange={handleActualChange}
+                    handleTargetChange={handleTargetChange}
                     handleStatusChange={handleStatusChange}
                     handleActionsChange={handleActionsChange}
                     headerTitle="Irrigation KPIs"
                     isIrrigation={true}
+                    branchId={irrigationBranchId.replace('IRR-', '')}
                   />
                 </TabsContent>
               );
@@ -1072,6 +1139,7 @@ const BranchManagerMeeting = () => {
                   loading={loading}
                   metricsData={metricsData}
                   handleActualChange={handleActualChange}
+                  handleTargetChange={handleTargetChange}
                   handleStatusChange={handleStatusChange}
                   handleActionsChange={handleActionsChange}
                   branchId={branch.id}
