@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { Navigate } from 'react-router-dom'
-import AuthComponent from './Auth'  // Make sure this matches the file name exactly
+import AuthComponent from './Auth'
 
 const ProtectedRoute = ({ children }) => {
+  // For local development only - skip auth
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Development mode: Authentication bypassed');
+    return children;
+  }
+
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -15,7 +20,7 @@ const ProtectedRoute = ({ children }) => {
           .select('*')
           .eq('email', session.user.email)
           .single();
-  
+
         if (!allowedUser || error) {
           await supabase.auth.signOut();
           setUser(null);
@@ -28,17 +33,15 @@ const ProtectedRoute = ({ children }) => {
       }
       setLoading(false);
     };
-  
-    // Check current auth status
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       checkAuthorization(session);
     });
-  
-    // Listen for auth changes
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       checkAuthorization(session);
     });
-  
+
     return () => subscription.unsubscribe();
   }, []);
 
