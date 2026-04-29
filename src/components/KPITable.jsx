@@ -149,6 +149,13 @@ const KPIS_WITH_PROJECTION = new Set([
   'Irrigation Revenue',
 ]);
 
+// KPIs where lower-than-target is good (cost/percentage metrics)
+const KPIS_INVERTED_DELTA = new Set([
+  'Maintenance Direct Labor Cost (DL%)',
+  'Maintenance Direct Labor Cost (DL%) - Onsites',
+  'OT %',
+]);
+
 const getMonthProgress = () => {
   const now = new Date();
   const year = now.getFullYear();
@@ -402,44 +409,43 @@ const KPITable = ({
 
                     {/* Delta */}
                     <td className="px-5 py-3.5 align-top text-center">
-                      {STACKED_KPIS.has(kpi.name) ? (() => {
-                        const deltaQ = computeDelta(kpi.target, kpi.actual, kpi.name);
-                        const deltaYtd = computeDelta(kpi.target_ytd, kpi.actual_ytd, kpi.name);
-                        return (
-                          <div className="space-y-2">
-                            <div>
-                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Quarterly</label>
-                              {deltaQ ? (
-                                <span className={`block px-2 py-1 rounded-full text-xs font-semibold ${
-                                  deltaQ.value > 0 ? 'bg-green-100 text-green-700' :
-                                  deltaQ.value < 0 ? 'bg-red-100 text-red-700' :
-                                  'bg-gray-100 text-black'
-                                }`}>{deltaQ.formatted}</span>
-                              ) : <span className="text-xs text-black">-</span>}
+                      {(() => {
+                        const inverted = KPIS_INVERTED_DELTA.has(kpi.name);
+                        const goodClass = 'bg-green-100 text-green-700';
+                        const badClass = 'bg-red-100 text-red-700';
+                        const deltaClass = (v) => {
+                          if (v === 0) return 'bg-gray-100 text-black';
+                          const isGood = inverted ? v < 0 : v > 0;
+                          return isGood ? goodClass : badClass;
+                        };
+                        if (STACKED_KPIS.has(kpi.name)) {
+                          const deltaQ = computeDelta(kpi.target, kpi.actual, kpi.name);
+                          const deltaYtd = computeDelta(kpi.target_ytd, kpi.actual_ytd, kpi.name);
+                          return (
+                            <div className="space-y-2">
+                              <div>
+                                <label className="text-[10px] font-semibold text-gray-500 uppercase">Quarterly</label>
+                                {deltaQ ? (
+                                  <span className={`block px-2 py-1 rounded-full text-xs font-semibold ${deltaClass(deltaQ.value)}`}>{deltaQ.formatted}</span>
+                                ) : <span className="text-xs text-black">-</span>}
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-semibold text-gray-500 uppercase">Annual</label>
+                                {deltaYtd ? (
+                                  <span className={`block px-2 py-1 rounded-full text-xs font-semibold ${deltaClass(deltaYtd.value)}`}>{deltaYtd.formatted}</span>
+                                ) : <span className="text-xs text-black">-</span>}
+                              </div>
                             </div>
-                            <div>
-                              <label className="text-[10px] font-semibold text-gray-500 uppercase">Annual</label>
-                              {deltaYtd ? (
-                                <span className={`block px-2 py-1 rounded-full text-xs font-semibold ${
-                                  deltaYtd.value > 0 ? 'bg-green-100 text-green-700' :
-                                  deltaYtd.value < 0 ? 'bg-red-100 text-red-700' :
-                                  'bg-gray-100 text-black'
-                                }`}>{deltaYtd.formatted}</span>
-                              ) : <span className="text-xs text-black">-</span>}
-                            </div>
-                          </div>
+                          );
+                        }
+                        return delta ? (
+                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${deltaClass(delta.value)}`}>
+                            {delta.formatted}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-black">-</span>
                         );
-                      })() : delta ? (
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                          delta.value > 0 ? 'bg-green-100 text-green-700' :
-                          delta.value < 0 ? 'bg-red-100 text-red-700' :
-                          'bg-gray-100 text-black'
-                        }`}>
-                          {delta.formatted}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-black">-</span>
-                      )}
+                      })()}
                       {KPIS_WITH_PROJECTION.has(kpi.name) && (() => {
                         const proj = computeProjection(kpi.actual);
                         if (!proj) return null;
