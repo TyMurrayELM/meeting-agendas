@@ -70,6 +70,11 @@ const KPI_TOOLTIPS = {
   'Hiring Needs': 'Identify any employee needs to meet service targets',
 };
 
+// Per-KPI placeholder text for the Actions & Deadlines input
+const KPI_ACTIONS_PLACEHOLDER = {
+  'Urgent Property Service Requests': 'List service requests and plan to remedy',
+};
+
 // Static links (same URL regardless of branch)
 const KPI_LINKS = {
   'Headcount': 'https://direct-labor-calculator.vercel.app/forecast',
@@ -491,7 +496,7 @@ const KPITable = ({
                       <RichTextActions
                         value={kpi.actions || ''}
                         onChange={(e) => handleActionsChange(mIndex, kIndex, e.target.value)}
-                        placeholder="Enter actions & deadlines..."
+                        placeholder={KPI_ACTIONS_PLACEHOLDER[kpi.name] || 'Enter actions & deadlines...'}
                       />
                     </td>
                   </tr>
