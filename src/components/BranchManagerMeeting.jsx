@@ -332,14 +332,14 @@ const getIrrigationKPIs = () => [
 
 const generateBiWeeklyTuesdays = () => {
   const dates = [];
-  const startDate = new Date('2024-12-10');
+  const startDate = new Date('2024-12-10T00:00:00Z');
   const endDate = new Date();
-  endDate.setFullYear(endDate.getFullYear() + 1);
+  endDate.setUTCFullYear(endDate.getUTCFullYear() + 1);
 
   let currentDate = new Date(startDate);
   while (currentDate <= endDate) {
     dates.push(currentDate.toISOString().split('T')[0]);
-    currentDate.setDate(currentDate.getDate() + 14);
+    currentDate.setUTCDate(currentDate.getUTCDate() + 14);
   }
 
   return dates;
